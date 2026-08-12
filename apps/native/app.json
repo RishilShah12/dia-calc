@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "scheme": "dia-calc",
+    "userInterfaceStyle": "automatic",
+    "orientation": "default",
+    "web": {
+      "bundler": "metro"
+    },
+    "name": "dia-calc",
+    "slug": "dia-calc",
+    "plugins": ["expo-font"],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

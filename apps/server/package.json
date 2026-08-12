@@ -1,0 +1,33 @@
+{
+  "name": "server",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc -b",
+    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server"
+  },
+  "dependencies": {
+    "@dia-calc/api": "workspace:*",
+    "@dia-calc/auth": "workspace:*",
+    "@dia-calc/db": "workspace:*",
+    "@dia-calc/env": "workspace:*",
+    "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/zod": "catalog:",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "evlog": "catalog:",
+    "hono": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@dia-calc/config": "workspace:*",
+    "@types/node": "^22.20.1",
+    "alchemy": "catalog:",
+    "tsdown": "^0.22.14",
+    "typescript": "^6.0.3",
+    "wrangler": "catalog:"
+  }
+}

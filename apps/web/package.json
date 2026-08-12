@@ -1,0 +1,47 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "check-types": "tsc --noEmit",
+    "start": "next start",
+    "dev:bare": "next dev --port 3001"
+  },
+  "dependencies": {
+    "@dia-calc/api": "workspace:*",
+    "@dia-calc/env": "workspace:*",
+    "@dia-calc/ui": "workspace:*",
+    "@opennextjs/cloudflare": "^1.20.2",
+    "@orpc/client": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/tanstack-query": "catalog:",
+    "@swc/helpers": "^0.5.23",
+    "@tanstack/react-form": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "evlog": "catalog:",
+    "lucide-react": "catalog:",
+    "next": "^16.3.0",
+    "next-themes": "catalog:",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "sonner": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@dia-calc/config": "workspace:*",
+    "@tailwindcss/postcss": "catalog:",
+    "@tanstack/react-query-devtools": "^5.101.4",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "catalog:",
+    "alchemy": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "^6.0.3",
+    "wrangler": "catalog:"
+  }
+}

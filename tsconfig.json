@@ -1,0 +1,6 @@
+{
+  "extends": "@dia-calc/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
+}
