@@ -8,24 +8,40 @@ allowBuilds:
 catalog:
   dotenv: ^17.4.2
   zod: ^4.4.3
-  "@cloudflare/workers-types": ^5.20260728.1
-  hono: ^4.12.32
-  "@orpc/server": ^1.14.12
-  "@orpc/openapi": ^1.14.12
-  "@orpc/zod": ^1.14.12
-  better-auth: 1.6.25
-  evlog: ^2.22.4
-  alchemy: ^0.93.12
-  wrangler: ^4.115.0
-  lucide-react: ^1.27.0
+  "@cloudflare/workers-types": ^5.20260812.1
+  hono: ^4.13.1
+  "@orpc/server": ^1.15.0
+  "@orpc/openapi": ^1.15.0
+  "@orpc/zod": ^1.15.0
+  better-auth: 1.6.27
+  evlog: ^2.26.0
+  alchemy: ^0.94.0
+  wrangler: ^4.122.0
+  lucide-react: ^1.31.0
   next-themes: ^0.4.6
-  sonner: ^2.0.7
-  "@orpc/tanstack-query": ^1.14.12
-  "@orpc/client": ^1.14.12
+  sonner: ^2.0.8
+  "@orpc/tanstack-query": ^1.15.0
+  "@orpc/client": ^1.15.0
   "@tanstack/react-query": ^5.101.4
-  "@tanstack/react-form": ^1.33.2
+  "@tanstack/react-form": ^1.33.5
   "@tailwindcss/postcss": ^4.3.3
-  "@types/react-dom": ^19.2.3
+  "@types/react-dom": ^19.2.4
   tailwindcss: ^4.3.3
   tailwind-merge: ^3.6.0
-  "@better-auth/expo": 1.6.25
+  "@better-auth/expo": 1.6.27
+minimumReleaseAgeExclude:
+  - shadcn@4.17.0
+  - ultracite@7.10.3
+  - '@better-auth/core@1.6.27'
+  - '@better-auth/drizzle-adapter@1.6.27'
+  - '@better-auth/expo@1.6.27'
+  - '@better-auth/kysely-adapter@1.6.27'
+  - '@better-auth/memory-adapter@1.6.27'
+  - '@better-auth/mongo-adapter@1.6.27'
+  - '@better-auth/prisma-adapter@1.6.27'
+  - '@better-auth/telemetry@1.6.27'
+  - '@cloudflare/workers-types@5.20260812.1'
+  - better-auth@1.6.27
+  - evlog@2.26.0
+  - miniflare@5.20260811.0-alpha
+  - wrangler@4.122.0

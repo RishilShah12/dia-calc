@@ -1,29 +1,28 @@
 {
   "mcpServers": {
+    "better-auth": {
+      "url": "https://mcp.better-auth.com/mcp"
+    },
     "better-t-stack": {
       "command": "pnpm",
       "args": ["dlx", "create-better-t-stack@latest", "mcp"]
     },
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
-    },
     "cloudflare-docs": {
-      "url": "https://docs.mcp.cloudflare.com/sse"
+      "url": "https://docs.mcp.cloudflare.com/mcp"
     },
-    "shadcn": {
-      "command": "npx",
-      "args": ["-y", "shadcn@latest", "mcp"]
-    },
-    "next-devtools": {
-      "command": "npx",
-      "args": ["-y", "next-devtools-mcp@latest"]
-    },
-    "better-auth": {
-      "url": "https://mcp.inkeep.com/better-auth/mcp"
+    "context7": {
+      "url": "https://mcp.context7.com/mcp"
     },
     "expo-mcp": {
       "url": "https://mcp.expo.dev/mcp"
+    },
+    "next-devtools": {
+      "command": "pnpm",
+      "args": ["dlx", "next-devtools-mcp@latest"]
+    },
+    "shadcn": {
+      "command": "pnpm",
+      "args": ["dlx", "shadcn@latest", "mcp"]
     }
   }
 }

@@ -4,11 +4,11 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "dev": "expo start --clear",
     "android": "expo run:android",
+    "dev": "expo start --clear",
     "ios": "expo run:ios",
     "prebuild": "expo prebuild",
+    "start": "expo start",
     "web": "expo start --web"
   },
   "dependencies": {
@@ -56,6 +56,6 @@
     "@dia-calc/config": "workspace:*",
     "@types/node": "^26.1.2",
     "@types/react": "~19.2.17",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2"
   }
 }

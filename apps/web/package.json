@@ -37,11 +37,11 @@
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.101.4",
     "@types/node": "^20.19.43",
-    "@types/react": "^19.2.17",
+    "@types/react": "^19.2.18",
     "@types/react-dom": "catalog:",
     "alchemy": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "wrangler": "catalog:"
   }
 }
