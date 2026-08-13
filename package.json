@@ -1,22 +1,23 @@
 {
   "name": "dia-calc",
   "private": true,
+  "type": "module",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
-  "type": "module",
   "scripts": {
-    "dev": "turbo run dev",
     "build": "turbo run build",
+    "check": "ultracite check",
     "check-types": "turbo run check-types",
-    "dev:native": "turbo run dev -F native",
-    "dev:web": "turbo run dev -F web",
-    "dev:server": "turbo run dev -F server",
     "db:generate": "turbo run db:generate -F @dia-calc/db",
+    "db:studio": "turbo -F @dia-calc/db db:studio",
     "deploy": "turbo run deploy -F @dia-calc/infra",
     "destroy": "turbo run destroy -F @dia-calc/infra",
-    "check": "ultracite check",
+    "dev": "turbo run dev",
+    "dev:native": "turbo run dev -F native",
+    "dev:server": "turbo run dev -F server",
+    "dev:web": "turbo run dev -F web",
     "fix": "ultracite fix"
   },
   "dependencies": {

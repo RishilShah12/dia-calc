@@ -1,1 +1,26 @@
 @import "@dia-calc/ui/globals.css";
+
+:root {
+	--calc-accent: oklch(0.72 0.16 55);
+	--calc-accent-foreground: oklch(0.99 0.01 90);
+	--calc-key: oklch(0.96 0.008 90);
+	--calc-surface: oklch(0.97 0.008 90);
+	--calc-total: oklch(0.52 0.14 250);
+}
+
+.dark {
+	--calc-accent: oklch(0.76 0.15 55);
+	--calc-accent-foreground: oklch(0.22 0.03 55);
+	--calc-key: oklch(0.28 0.015 260);
+	--calc-surface: oklch(0.18 0.012 260);
+	--calc-total: oklch(0.76 0.1 250);
+}
+
+@theme inline {
+	--color-calc-accent: var(--calc-accent);
+	--color-calc-accent-foreground: var(--calc-accent-foreground);
+	--color-calc-key: var(--calc-key);
+	--color-calc-surface: var(--calc-surface);
+	--color-calc-total: var(--calc-total);
+	--radius-calc: 1.25rem;
+}

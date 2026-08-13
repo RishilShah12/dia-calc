@@ -6,35 +6,37 @@ import Header from "@/components/header";
 import Providers from "@/components/providers";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+	subsets: ["latin"],
+	variable: "--font-geist-sans",
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+	subsets: ["latin"],
+	variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
-  title: "dia-calc",
-  description: "dia-calc",
+	description: "dia-calc",
+	title: "dia-calc",
 };
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
-            <Header />
-            {children}
-          </div>
-        </Providers>
-      </body>
-    </html>
-  );
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<body
+				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+			>
+				<Providers>
+					<div className="mx-auto flex h-svh w-full max-w-md flex-col">
+						<Header />
+						<div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+					</div>
+				</Providers>
+			</body>
+		</html>
+	);
 }

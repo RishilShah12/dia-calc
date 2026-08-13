@@ -10,7 +10,9 @@
     }
   },
   "scripts": {
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio --config drizzle.config.local.ts",
+    "db:studio:remote": "drizzle-kit studio"
   },
   "dependencies": {
     "@dia-calc/env": "workspace:*",

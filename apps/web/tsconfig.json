@@ -12,6 +12,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+    // So `rap-calc.test.ts` can import "./rap-calc.ts" — `node --test` resolves
+    // the real extension. Safe because noEmit is set and no bundler sees it.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

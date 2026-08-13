@@ -108,6 +108,34 @@ dia-calc/
 │   └── db/          # Database schema & queries
 ```
 
+## Rapaport price list
+
+The calculator prices stones off the Rapaport list, fetched from the RapNet API. Put your API
+credentials — activated at `trade.rapnet.com` → Settings → Privacy → Access Key — in
+`apps/server/.env`:
+
+```
+RAPNET_CLIENT_ID=...
+RAPNET_CLIENT_SECRET=...
+```
+
+They are bound to the server Worker only (see `packages/infra/alchemy.run.ts`); the web app never
+talks to Rapaport directly. Never commit them.
+
+Rapaport publishes exactly two lists: **Round**, and one **fancy** list (the API calls it `Pear`)
+that covers every non-round shape — asking for `shape=Princess` returns HTTP 400. Both are cached in
+D1 as one row each and refetched when more than a day old, or on demand via the refresh button.
+Rapaport republishes every Thursday at 23:59 ET.
+
+The shape picker in the app lists the shapes a dealer actually trades and maps each to its list; no
+per-shape adjustment is hard-coded, because Rapaport publishes those as weekly commentary rather
+than data. That adjustment belongs in the back %.
+
+**The Rapaport price list is copyrighted and available to subscribers only.** Every price procedure
+is `protectedProcedure` for that reason — do not expose it publicly. Serving it to users beyond your
+own subscription requires the per-user OAuth flow, which needs Rapaport to whitelist a redirect URI
+first.
+
 ## Available Scripts
 
 - `pnpm run dev`: Start all applications in development mode
