@@ -1,0 +1,20 @@
+{
+  "name": "@dia-calc/calc",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./rap-calc": "./src/rap-calc.ts",
+    "./shapes": "./src/shapes.ts",
+    "./keypad": "./src/keypad.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "node --test src/rap-calc.test.ts"
+  },
+  "devDependencies": {
+    "@dia-calc/config": "workspace:*",
+    "@types/node": "^22.20.1",
+    "typescript": "^7.0.2"
+  }
+}

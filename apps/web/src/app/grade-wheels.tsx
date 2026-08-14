@@ -1,6 +1,6 @@
 "use client";
 
-import { SHAPES } from "@/lib/shapes";
+import { SHAPES } from "@dia-calc/calc/shapes";
 
 import WheelPicker from "./wheel-picker";
 

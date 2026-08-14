@@ -1,76 +1,92 @@
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { Link } from "expo-router";
-import { Drawer } from "expo-router/drawer";
+import {
+	Drawer,
+	type DrawerContentComponentProps,
+	DrawerContentScrollView,
+	DrawerItem,
+	DrawerItemList,
+} from "expo-router/drawer";
+import { SymbolView } from "expo-symbols";
 import { useThemeColor } from "heroui-native";
-import React, { useCallback } from "react";
-import { Pressable, Text } from "react-native";
+import { useCallback } from "react";
+import { Text } from "react-native";
+import { toggleGuides, useGuides } from "@/lib/guides";
 
-import { ThemeToggle } from "@/components/theme-toggle";
+function DrawerContent(props: DrawerContentComponentProps) {
+	const guides = useGuides();
+	const themeColorForeground = useThemeColor("foreground");
+
+	const guidesIcon = useCallback(
+		({ size }: { size: number }) => (
+			<SymbolView
+				name={guides ? "eye" : "eye.slash"}
+				size={size}
+				tintColor={themeColorForeground}
+			/>
+		),
+		[guides, themeColorForeground]
+	);
+
+	return (
+		<DrawerContentScrollView {...props}>
+			<DrawerItemList {...props} />
+			<DrawerItem
+				icon={guidesIcon}
+				label={guides ? "Guides on" : "Guides off"}
+				labelStyle={{ color: themeColorForeground }}
+				onPress={toggleGuides}
+			/>
+		</DrawerContentScrollView>
+	);
+}
 
 function DrawerLayout() {
 	const themeColorForeground = useThemeColor("foreground");
 	const themeColorBackground = useThemeColor("background");
 
-	const renderThemeToggle = useCallback(() => <ThemeToggle />, []);
-
 	return (
 		<Drawer
+			drawerContent={DrawerContent}
 			screenOptions={{
 				drawerStyle: { backgroundColor: themeColorBackground },
-				headerRight: renderThemeToggle,
-				headerStyle: { backgroundColor: themeColorBackground },
-				headerTintColor: themeColorForeground,
-				headerTitleStyle: {
-					color: themeColorForeground,
-					fontWeight: "600",
-				},
+				headerShown: false,
+				// The calculator fills the screen edge to edge; an edge swipe would
+				// fight the wheels and the slider, so the button is the only way in.
+				swipeEnabled: false,
 			}}
 		>
+			{/* "Calculator" would be ambiguous now that there are two of them. */}
 			<Drawer.Screen
 				name="index"
 				options={{
 					drawerIcon: ({ size, color, focused }) => (
-						<Ionicons
-							color={focused ? color : themeColorForeground}
-							name="home-outline"
+						<SymbolView
+							name="diamond"
 							size={size}
+							tintColor={focused ? color : themeColorForeground}
 						/>
 					),
 					drawerLabel: ({ color, focused }) => (
 						<Text style={{ color: focused ? color : themeColorForeground }}>
-							Home
+							Polish
 						</Text>
 					),
-					headerTitle: "Home",
 				}}
 			/>
 			<Drawer.Screen
-				name="(tabs)"
+				name="rough"
 				options={{
 					drawerIcon: ({ size, color, focused }) => (
-						<MaterialIcons
-							color={focused ? color : themeColorForeground}
-							name="border-bottom"
+						<SymbolView
+							name="cube"
 							size={size}
+							tintColor={focused ? color : themeColorForeground}
 						/>
 					),
 					drawerLabel: ({ color, focused }) => (
 						<Text style={{ color: focused ? color : themeColorForeground }}>
-							Tabs
+							Rough
 						</Text>
 					),
-					headerRight: () => (
-						<Link asChild href="/modal">
-							<Pressable className="mr-4">
-								<Ionicons
-									color={themeColorForeground}
-									name="add-outline"
-									size={24}
-								/>
-							</Pressable>
-						</Link>
-					),
-					headerTitle: "Tabs",
 				}}
 			/>
 		</Drawer>

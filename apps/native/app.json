@@ -2,16 +2,20 @@
   "expo": {
     "scheme": "dia-calc",
     "userInterfaceStyle": "automatic",
-    "orientation": "default",
+    "orientation": "portrait",
     "web": {
       "bundler": "metro"
     },
     "name": "dia-calc",
     "slug": "dia-calc",
-    "plugins": ["expo-font"],
+    "plugins": ["expo-font", "expo-apple-authentication"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.rishilshah.dia-calc",
+      "usesAppleSignIn": true
     }
   }
 }

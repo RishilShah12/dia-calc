@@ -1,59 +1,27 @@
 "use client";
 
-import { Skeleton } from "@dia-calc/ui/components/skeleton";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
-
-import { fxQueryOptions } from "@/lib/fx";
 import {
-	dispatchPhysicalKey,
 	type KeypadTarget,
 	keypadBackspace,
 	keypadDigit,
 	keypadDot,
 	keypadSign,
 	maxDecimalsFor,
-} from "@/lib/keypad";
-import { type Clamp, formatBracket, lookupPrice, quote } from "@/lib/rap-calc";
-import { findShape, type Shape } from "@/lib/shapes";
+} from "@dia-calc/calc/keypad";
+import { lookupPrice, quote } from "@dia-calc/calc/rap-calc";
+import { findShape } from "@dia-calc/calc/shapes";
+import { Skeleton } from "@dia-calc/ui/components/skeleton";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useState } from "react";
+
+import { fxQueryOptions } from "@/lib/fx";
+import { dispatchPhysicalKey } from "@/lib/keypad-keys";
 import { orpc, queryClient } from "@/utils/orpc";
 
 import CalcHeader from "./calc-header";
 import GradeWheels from "./grade-wheels";
 import Keypad from "./keypad";
 import SummaryCard from "./summary-card";
-
-function clampNotice(clamped: Clamp, bracket: [number, number] | null) {
-	if (!(clamped && bracket)) {
-		return null;
-	}
-	const where = formatBracket(bracket);
-	if (clamped === "above") {
-		return `Above Rapaport's published range — priced off ${where}.`;
-	}
-	if (clamped === "below") {
-		return `Below Rapaport's published range — priced off ${where}.`;
-	}
-	return `Rapaport publishes no list for this weight — priced off ${where}.`;
-}
-
-function quoteNotice(
-	clamped: Clamp,
-	bracket: [number, number] | null,
-	shape: Shape
-): string | null {
-	const parts: string[] = [];
-	if (shape.list !== "Round") {
-		parts.push(
-			"Fancy shapes share one Rap list — apply the shape adjustment in the back %."
-		);
-	}
-	const clamp = clampNotice(clamped, bracket);
-	if (clamp) {
-		parts.push(clamp);
-	}
-	return parts.length > 0 ? parts.join(" ") : null;
-}
 
 export default function Calculator() {
 	const priceList = useQuery(
@@ -248,7 +216,6 @@ export default function Calculator() {
 				caratText={caratText}
 				listPerCarat={found.perCarat}
 				netPerCarat={q.netPerCarat}
-				notice={quoteNotice(found.clamped, found.bracket, shape)}
 				onSelectTarget={handleSelectTarget}
 				target={keypadTarget}
 				total={q.total}

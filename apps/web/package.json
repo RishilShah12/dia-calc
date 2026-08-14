@@ -6,11 +6,11 @@
     "build": "next build",
     "check-types": "tsc --noEmit",
     "dev:bare": "next dev --port 3001",
-    "start": "next start",
-    "test": "node --test src/lib/rap-calc.test.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@dia-calc/api": "workspace:*",
+    "@dia-calc/calc": "workspace:*",
     "@dia-calc/env": "workspace:*",
     "@dia-calc/ui": "workspace:*",
     "@opennextjs/cloudflare": "^1.20.2",

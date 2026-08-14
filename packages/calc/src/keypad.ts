@@ -1,9 +1,12 @@
-export type KeypadTarget = "carat" | "discount" | "net";
+export type KeypadTarget = "carat" | "discount" | "net" | "rough" | "total";
 
 const MAX_DECIMALS: Record<KeypadTarget, number> = {
 	carat: 2,
 	discount: 2,
 	net: 0,
+	/** A rough is weighed like a polished stone, to the hundredth. */
+	rough: 2,
+	total: 0,
 };
 
 export const maxDecimalsFor = (target: KeypadTarget): number =>
@@ -69,54 +72,4 @@ export function keypadSign(current: string): string {
 	}
 
 	return current.startsWith("-") ? current.slice(1) : `-${current}`;
-}
-
-export interface KeypadActions {
-	backspace: () => void;
-	clear: () => void;
-	digit: (digit: string) => void;
-	dot: () => void;
-	sign: () => void;
-}
-
-const isEditableTarget = (target: EventTarget | null) =>
-	target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-
-/** Returns true when the key was consumed so the caller can preventDefault. */
-export function dispatchPhysicalKey(
-	event: KeyboardEvent,
-	actions: KeypadActions
-): boolean {
-	if (isEditableTarget(event.target) || event.metaKey || event.ctrlKey) {
-		return false;
-	}
-
-	if (event.key >= "0" && event.key <= "9") {
-		actions.digit(event.key);
-		return true;
-	}
-
-	switch (event.key) {
-		case ".":
-		case ",":
-			actions.dot();
-			return true;
-		case "Backspace":
-			actions.backspace();
-			return true;
-		case "Escape":
-			actions.clear();
-			return true;
-		case "-":
-		case "+":
-		case "_":
-			actions.sign();
-			return true;
-		default:
-			if (event.key.toLowerCase() === "c") {
-				actions.clear();
-				return true;
-			}
-			return false;
-	}
 }

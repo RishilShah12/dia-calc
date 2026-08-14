@@ -1,0 +1,10 @@
+{
+  "extends": "@dia-calc/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true,
+    // `node --test` strips types in place, so the test imports the source by
+    // its real `.ts` path.
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  }
+}

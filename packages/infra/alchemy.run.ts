@@ -14,10 +14,14 @@ const db = await D1Database("database", {
 
 export const server = await Worker("server", {
 	bindings: {
+		APPLE_CLIENT_ID: alchemy.env.APPLE_CLIENT_ID!,
+		APPLE_CLIENT_SECRET: alchemy.secret.env.APPLE_CLIENT_SECRET!,
 		BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
 		BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,
 		CORS_ORIGIN: alchemy.env.CORS_ORIGIN!,
 		DB: db,
+		GOOGLE_CLIENT_ID: alchemy.env.GOOGLE_CLIENT_ID!,
+		GOOGLE_CLIENT_SECRET: alchemy.secret.env.GOOGLE_CLIENT_SECRET!,
 		RAPNET_CLIENT_ID: alchemy.secret.env.RAPNET_CLIENT_ID!,
 		RAPNET_CLIENT_SECRET: alchemy.secret.env.RAPNET_CLIENT_SECRET!,
 	},

@@ -1,17 +1,15 @@
 "use client";
 
+import type { KeypadTarget } from "@dia-calc/calc/keypad";
+import { usd } from "@dia-calc/calc/rap-calc";
 import { cn } from "@dia-calc/ui/lib/utils";
 import { useCallback } from "react";
-
-import type { KeypadTarget } from "@/lib/keypad";
-import { usd } from "@/lib/rap-calc";
 
 interface Props {
 	backPct: number;
 	caratText: string;
 	listPerCarat: number | null;
 	netPerCarat: number;
-	notice: string | null;
 	onSelectTarget: (target: KeypadTarget) => void;
 	target: KeypadTarget;
 	total: number;
@@ -74,7 +72,6 @@ export default function SummaryCard({
 	caratText,
 	listPerCarat,
 	netPerCarat,
-	notice,
 	onSelectTarget,
 	target,
 	total,
@@ -143,9 +140,6 @@ export default function SummaryCard({
 					/>
 				</div>
 			</section>
-			{notice ? (
-				<p className="px-1 text-muted-foreground text-xs">{notice}</p>
-			) : null}
 		</div>
 	);
 }

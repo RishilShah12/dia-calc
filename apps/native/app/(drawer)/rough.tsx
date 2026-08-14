@@ -1,14 +1,14 @@
 import { Redirect } from "expo-router";
 
-import { Calculator } from "@/components/calculator";
+import { RoughCalculator } from "@/components/rough-calculator";
 import { authClient } from "@/lib/auth-client";
 
 /**
- * Gated twice, same as the web route: this check, and `protectedProcedure` on
- * `priceList.get` itself. The Rapaport list is copyrighted and subscriber-only,
- * so it must never reach an anonymous request.
+ * Gated twice, same as the polish route: this check, and `protectedProcedure`
+ * on `priceList.get` itself. The Rapaport list is copyrighted and
+ * subscriber-only, so it must never reach an anonymous request.
  */
-export default function Home() {
+export default function Rough() {
 	const { data: session, isPending } = authClient.useSession();
 
 	// Redirecting while the stored session is still being read would bounce a
@@ -21,5 +21,5 @@ export default function Home() {
 		return <Redirect href="/sign-in" />;
 	}
 
-	return <Calculator />;
+	return <RoughCalculator />;
 }

@@ -3,10 +3,12 @@ import test from "node:test";
 
 import {
 	backFromNet,
+	compareQuotes,
 	lookupPrice,
 	netFromBack,
 	type PriceGrid,
 	quote,
+	summarizeRough,
 } from "./rap-calc.ts";
 
 /**
@@ -92,6 +94,74 @@ test("back and net solve in both directions", () => {
 	assert.equal(quote(10_000, 1.02, { netPerCarat: 7200 }).backPct, -28);
 });
 
+test("a typed total back-solves the same discount as the price it implies", () => {
+	// What the keypad does with a typed TOTAL: divide by the weight and quote
+	// off the per-carat price, so the discount falls out of `backFromNet`.
+	const q = quote(10_000, 1.5, { netPerCarat: 12_000 / 1.5 });
+	assert.equal(q.backPct, -20);
+	assert.equal(q.netPerCarat, 8000);
+	assert.equal(q.total, 12_000);
+});
+
 test("a premium over list is expressible", () => {
 	assert.equal(netFromBack(10_000, 5), 10_500);
+});
+
+test("a recut that loses weight but gains grade can still pay", () => {
+	// 1.00ct G VS1 at -25 back, recut to 0.90ct D IF at the same back.
+	const before = quote(3000, 1.0, { backPct: -25 });
+	const after = quote(6000, 0.9, { backPct: -25 });
+
+	const { delta, deltaPct, yieldPct } = compareQuotes(before, after, 1.0, 0.9);
+	assert.equal(before.total, 2250);
+	assert.equal(after.total, 4050);
+	assert.equal(delta, 1800);
+	assert.equal(deltaPct, 80);
+	assert.equal(yieldPct, 90);
+});
+
+test("comparing against an unpriced stone reports 0%, never Infinity", () => {
+	const before = quote(0, 1.0, { backPct: -25 });
+	const after = quote(4000, 0.8, { backPct: -25 });
+
+	const { delta, deltaPct, yieldPct } = compareQuotes(before, after, 1.0, 0.8);
+	assert.equal(delta, 2400);
+	assert.equal(deltaPct, 0);
+	assert.equal(yieldPct, 80);
+
+	// And no weight yet means no yield to speak of.
+	assert.equal(compareQuotes(before, after, 0, 0).yieldPct, 0);
+});
+
+test("a rough is worth its parts, divided by what it weighed", () => {
+	// The legacy app's own screen: a 99.9ct rough, part A 6.7ct off a $54,000
+	// list at 31 back, part B making up the rest of the $310,707.
+	const a = quote(54_000, 6.7, { backPct: -31 });
+	assert.equal(a.netPerCarat, 37_260);
+	assert.equal(Math.round(a.total), 249_642);
+
+	const summary = summarizeRough(99.9, [
+		{ carat: 6.7, total: a.total },
+		{ carat: 14.7, total: 61_065 },
+	]);
+	assert.equal(Math.round(summary.total), 310_707);
+	assert.equal(summary.perCarat.toFixed(2), "3110.18");
+	assert.equal(summary.partsCarat.toFixed(1), "21.4");
+	assert.equal(summary.yieldPct.toFixed(1), "21.4");
+});
+
+test("a rough with no parts yet is worth nothing, not NaN", () => {
+	const summary = summarizeRough(99.9, []);
+	assert.equal(summary.total, 0);
+	assert.equal(summary.perCarat, 0);
+	assert.equal(summary.yieldPct, 0);
+});
+
+test("parts against an unweighed rough report 0/ct, never Infinity", () => {
+	// The state every session opens in: parts priced before the rough is weighed.
+	const summary = summarizeRough(0, [{ carat: 6.7, total: 249_642 }]);
+	assert.equal(summary.total, 249_642);
+	assert.equal(summary.partsCarat, 6.7);
+	assert.equal(summary.perCarat, 0);
+	assert.equal(summary.yieldPct, 0);
 });

@@ -156,6 +156,75 @@ export function quote(
 	return { backPct, listPerCarat, netPerCarat, total: netPerCarat * carat };
 }
 
+export interface Comparison {
+	/** After minus before, in dollars. Negative means the recut loses money. */
+	delta: number;
+	/** `delta` as a percentage of the before total. */
+	deltaPct: number;
+	/** Weight kept, as a percentage. 82 means an 0.82ct came off a 1.00ct. */
+	yieldPct: number;
+}
+
+/**
+ * Is it worth recutting? The after-stone is quoted exactly like the before-stone
+ * — this only subtracts, so there is no second pricing model to keep in step.
+ *
+ * A zero before-total (an unpriced grade, or no weight yet) yields 0% rather
+ * than dividing by it, because "infinitely better" is not a useful answer.
+ */
+export function compareQuotes(
+	before: Quote,
+	after: Quote,
+	beforeCarat: number,
+	afterCarat: number
+): Comparison {
+	const delta = after.total - before.total;
+	return {
+		delta,
+		deltaPct: before.total > 0 ? (delta / before.total) * 100 : 0,
+		yieldPct:
+			beforeCarat > 0 && afterCarat > 0 ? (afterCarat / beforeCarat) * 100 : 0,
+	};
+}
+
+export interface RoughSummary {
+	/** Σ of the part weights. Always less than the rough: sawing costs weight. */
+	partsCarat: number;
+	/** What the rough is worth per carat — the number the whole screen exists for. */
+	perCarat: number;
+	/** Σ of the part totals. */
+	total: number;
+	/** `partsCarat` as a percentage of the rough. 21 means a 99.9ct gave 21ct. */
+	yieldPct: number;
+}
+
+/**
+ * What a rough is worth: price every part as its own stone, add them up, and
+ * divide by the weight of the rough they came out of.
+ *
+ * Parts are already-quoted stones, so there is no second pricing model here —
+ * this only sums. A rough with no weight yet yields 0 rather than dividing by
+ * it, for the same reason `compareQuotes` does.
+ */
+export function summarizeRough(
+	roughCarat: number,
+	parts: { carat: number; total: number }[]
+): RoughSummary {
+	let partsCarat = 0;
+	let total = 0;
+	for (const part of parts) {
+		partsCarat += part.carat;
+		total += part.total;
+	}
+
+	return {
+		partsCarat,
+		perCarat: roughCarat > 0 ? total / roughCarat : 0,
+		total,
+		yieldPct: roughCarat > 0 ? (partsCarat / roughCarat) * 100 : 0,
+	};
+}
+
 const USD_WHOLE = new Intl.NumberFormat("en-US", {
 	currency: "USD",
 	maximumFractionDigits: 0,

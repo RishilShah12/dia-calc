@@ -40,6 +40,21 @@ export function createAuth() {
 		//   },
 		// },
 		secret: env.BETTER_AUTH_SECRET,
+		socialProviders: {
+			// Apple's `clientSecret` is a signed JWT that expires every six months,
+			// not a static string — regenerate it when you swap the placeholders out.
+			// `appBundleIdentifier` is what lets the native Sign in with Apple sheet
+			// verify, since its audience is the bundle ID rather than the service ID.
+			apple: {
+				appBundleIdentifier: "com.rishilshah.dia-calc",
+				clientId: env.APPLE_CLIENT_ID,
+				clientSecret: env.APPLE_CLIENT_SECRET,
+			},
+			google: {
+				clientId: env.GOOGLE_CLIENT_ID,
+				clientSecret: env.GOOGLE_CLIENT_SECRET,
+			},
+		},
 		trustedOrigins: [
 			env.CORS_ORIGIN,
 			"dia-calc://",
