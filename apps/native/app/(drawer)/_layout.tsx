@@ -2,91 +2,114 @@ import {
 	Drawer,
 	type DrawerContentComponentProps,
 	DrawerContentScrollView,
-	DrawerItem,
 	DrawerItemList,
 } from "expo-router/drawer";
 import { SymbolView } from "expo-symbols";
-import { useThemeColor } from "heroui-native";
-import { useCallback } from "react";
-import { Text } from "react-native";
+import { StyleSheet, Switch, Text, useColorScheme, View } from "react-native";
+
+import { ACCENT, paletteFor } from "@/components/calc-theme";
 import { toggleGuides, useGuides } from "@/lib/guides";
+
+/**
+ * The drawer reads the same palette the calculators do rather than
+ * heroui-native's. The two genuinely disagree — heroui's light background is a
+ * neutral #F5F5F5 against the calculator's warm #F6EEE6 — and a drawer sliding
+ * out in a different shade of almost-white is exactly the kind of seam that
+ * reads as a bug.
+ */
+const useCalcPalette = () =>
+	paletteFor(useColorScheme() === "dark" ? "dark" : "light");
+
+/**
+ * Cut to react-navigation's own `DrawerItem` so this row lines up with the
+ * three routes above it: same 12pt outer margin, same glyph gutter, same
+ * 15pt/500 label.
+ */
+const styles = StyleSheet.create({
+	/** A fixed gutter, so the label starts where the routes' labels do rather
+	    than wherever this particular glyph happens to end. */
+	icon: { alignItems: "center", width: 24 },
+	label: { flex: 1, fontSize: 15, fontWeight: "500" },
+	row: {
+		alignItems: "center",
+		flexDirection: "row",
+		gap: 12,
+		marginHorizontal: 10,
+		paddingHorizontal: 7,
+		paddingVertical: 10,
+	},
+});
 
 function DrawerContent(props: DrawerContentComponentProps) {
 	const guides = useGuides();
-	const themeColorForeground = useThemeColor("foreground");
-
-	const guidesIcon = useCallback(
-		({ size }: { size: number }) => (
-			<SymbolView
-				name={guides ? "eye" : "eye.slash"}
-				size={size}
-				tintColor={themeColorForeground}
-			/>
-		),
-		[guides, themeColorForeground]
-	);
+	const palette = useCalcPalette();
 
 	return (
 		<DrawerContentScrollView {...props}>
 			<DrawerItemList {...props} />
-			<DrawerItem
-				icon={guidesIcon}
-				label={guides ? "Guides on" : "Guides off"}
-				labelStyle={{ color: themeColorForeground }}
-				onPress={toggleGuides}
-			/>
+			{/* Guides is a setting, not a destination — so it gets the control a
+			    setting gets, and the label stays the noun. A button labelled
+			    "Guides off" had to say the state and the action in one line. */}
+			<View style={styles.row}>
+				<View style={styles.icon}>
+					<SymbolView name="eye" size={22} tintColor={palette.primary} />
+				</View>
+				<Text style={[styles.label, { color: palette.primary }]}>Guides</Text>
+				<Switch
+					accessibilityLabel="Guides"
+					onValueChange={toggleGuides}
+					trackColor={{ true: ACCENT }}
+					value={guides}
+				/>
+			</View>
 		</DrawerContentScrollView>
 	);
 }
 
 function DrawerLayout() {
-	const themeColorForeground = useThemeColor("foreground");
-	const themeColorBackground = useThemeColor("background");
+	const palette = useCalcPalette();
 
 	return (
 		<Drawer
 			drawerContent={DrawerContent}
 			screenOptions={{
-				drawerStyle: { backgroundColor: themeColorBackground },
+				// The tint props do the colouring that the label render functions
+				// used to hand-roll, back when the drawer was on a palette whose
+				// active colour was react-navigation's default blue.
+				drawerActiveTintColor: ACCENT,
+				drawerInactiveTintColor: palette.primary,
+				drawerStyle: { backgroundColor: palette.background },
 				headerShown: false,
 				// The calculator fills the screen edge to edge; an edge swipe would
 				// fight the wheels and the slider, so the button is the only way in.
 				swipeEnabled: false,
 			}}
 		>
-			{/* "Calculator" would be ambiguous now that there are two of them. */}
 			<Drawer.Screen
-				name="index"
+				name="(polish)"
 				options={{
-					drawerIcon: ({ size, color, focused }) => (
-						<SymbolView
-							name="diamond"
-							size={size}
-							tintColor={focused ? color : themeColorForeground}
-						/>
+					drawerIcon: ({ size, color }) => (
+						<SymbolView name="diamond" size={size} tintColor={color} />
 					),
-					drawerLabel: ({ color, focused }) => (
-						<Text style={{ color: focused ? color : themeColorForeground }}>
-							Polish
-						</Text>
-					),
+					drawerLabel: "Polish",
 				}}
 			/>
 			<Drawer.Screen
-				name="rough"
+				name="(rough)"
 				options={{
-					drawerIcon: ({ size, color, focused }) => (
-						<SymbolView
-							name="cube"
-							size={size}
-							tintColor={focused ? color : themeColorForeground}
-						/>
+					drawerIcon: ({ size, color }) => (
+						<SymbolView name="cube" size={size} tintColor={color} />
 					),
-					drawerLabel: ({ color, focused }) => (
-						<Text style={{ color: focused ? color : themeColorForeground }}>
-							Rough
-						</Text>
+					drawerLabel: "Rough",
+				}}
+			/>
+			<Drawer.Screen
+				name="(rap)"
+				options={{
+					drawerIcon: ({ size, color }) => (
+						<SymbolView name="tablecells" size={size} tintColor={color} />
 					),
+					drawerLabel: "Rap List",
 				}}
 			/>
 		</Drawer>

@@ -18,6 +18,7 @@ import {
 	BottomSheet,
 	Button,
 	Divider,
+	Group,
 	// Not the universal `Host` from `@expo/ui`: same component on iOS, but its
 	// types drop `ignoreSafeArea: 'container'`.
 	Host,
@@ -35,17 +36,21 @@ import {
 	contentTransition,
 	foregroundStyle,
 	frame,
+	labelStyle,
+	listRowBackground,
+	listStyle,
 	monospacedDigit,
 	onTapGesture,
 	padding,
 	pickerStyle,
+	presentationBackground,
 	presentationDetents,
 	presentationDragIndicator,
+	scrollContentBackground,
 	tag,
 	tint,
 } from "@expo/ui/swift-ui/modifiers";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigation } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { useColorScheme, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,17 +58,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
 	BLOCK_GAP,
 	Caption,
+	Caret,
 	DiscountSlider,
 	EMPTY,
 	FILL,
 	GLASS_CARD,
-	Header,
 	Key,
 	Keypad,
 	MAX_BACK,
 	Metric,
 	MIN_BACK,
-	ProfileSheet,
 	pricedBy,
 	RoundGlassButton,
 	rounded,
@@ -72,10 +76,10 @@ import {
 	s,
 	Wheel,
 } from "@/components/calc-kit";
+import { ProfileSheet } from "@/components/calc-profile";
 import { ACCENT, type CalcPalette, paletteFor } from "@/components/calc-theme";
-import { authClient } from "@/lib/auth-client";
 import { useGuides } from "@/lib/guides";
-import { orpc, queryClient } from "@/utils/orpc";
+import { orpc } from "@/utils/orpc";
 
 /**
  * The rough calculator answers a different question from the polish one: not
@@ -99,7 +103,7 @@ import { orpc, queryClient } from "@/utils/orpc";
  * runs off a 6.3" screen.
  */
 const ROUGH_CARD_PADDING = s(13);
-const ROUGH_WHEEL_HEIGHT = s(78);
+const ROUGH_WHEEL_HEIGHT = s(96);
 const ROUGH_VALUE = 30;
 const PART_CARAT = 32;
 const PART_TOTAL = 27;
@@ -207,7 +211,11 @@ function PartRow({
 	const grade = `${findShape(part.shapeName).abbr} ${part.color.toUpperCase()} ${part.clarity.toUpperCase()}`;
 	return (
 		<HStack
-			modifiers={[onTapGesture(handleSelect), padding({ vertical: 4 })]}
+			modifiers={[
+				onTapGesture(handleSelect),
+				padding({ vertical: 4 }),
+				listRowBackground("clear"),
+			]}
 			spacing={12}
 		>
 			<Text
@@ -273,7 +281,7 @@ function DeleteAction({
 	return (
 		<Button
 			label="Delete"
-			modifiers={[tint("#D9544D")]}
+			modifiers={[tint("#D9544D"), labelStyle("iconOnly")]}
 			onPress={handleDelete}
 			systemImage="trash"
 		/>
@@ -343,74 +351,88 @@ function PartsSheet({
 		<BottomSheet
 			anchor={<RoundGlassButton onPress={onOpen} symbol="list.bullet" />}
 			isPresented={isPresented}
-			modifiers={[
-				presentationDetents(["medium", "large"]),
-				presentationDragIndicator("visible"),
-			]}
 			onIsPresentedChange={onIsPresentedChange}
 		>
-			<VStack modifiers={[frame({ width })]} spacing={0}>
-				{/* `List` scrolls on its own, so a rough cut into a dozen parts needs
-				    no extra plumbing here. */}
-				<List>
-					{parts.map((part, index) => {
-						const partQuote = quotes[index];
-						if (!partQuote) {
-							return null;
-						}
-						const row = (
-							<PartRow
-								active={index === activeIndex}
-								index={index}
-								onSelect={onSelect}
-								palette={palette}
-								part={part}
-								partQuote={partQuote}
-							/>
-						);
-						// The last part cannot be swiped away: a rough with no parts has
-						// nothing to price, and the picker would have no segments.
-						if (!deletable) {
-							return row;
-						}
-						return (
-							<SwipeActions key={partLabel(index)}>
-								{row}
-								<SwipeActions.Actions>
-									<DeleteAction index={index} onDelete={onDelete} />
-								</SwipeActions.Actions>
-							</SwipeActions>
-						);
-					})}
-				</List>
+			{/* The presentation modifiers belong on the content. On `BottomSheet`
+			    they apply to the anchor-plus-sheet composite, outside the
+			    presentation context, and are quietly ignored — which is why this
+			    sheet used to open at `large` no matter what it was told. */}
+			<Group
+				modifiers={[
+					presentationDetents(["medium", "large"]),
+					presentationDragIndicator("visible"),
+					presentationBackground(palette.background),
+				]}
+			>
+				<VStack modifiers={[frame({ width })]} spacing={0}>
+					{/* `List` scrolls on its own, so a rough cut into a dozen parts needs
+				    no extra plumbing here. Its own grouped background would paint
+				    over the sheet's, so it is hidden and the rows take the palette. */}
+					<List
+						modifiers={[listStyle("plain"), scrollContentBackground("hidden")]}
+					>
+						{parts.map((part, index) => {
+							const partQuote = quotes[index];
+							if (!partQuote) {
+								return null;
+							}
+							const row = (
+								<PartRow
+									active={index === activeIndex}
+									index={index}
+									onSelect={onSelect}
+									palette={palette}
+									part={part}
+									partQuote={partQuote}
+								/>
+							);
+							// The last part cannot be swiped away: a rough with no parts has
+							// nothing to price, and the picker would have no segments.
+							if (!deletable) {
+								return row;
+							}
+							return (
+								<SwipeActions
+									key={partLabel(index)}
+									modifiers={[listRowBackground("clear")]}
+								>
+									{row}
+									<SwipeActions.Actions>
+										<DeleteAction index={index} onDelete={onDelete} />
+									</SwipeActions.Actions>
+								</SwipeActions>
+							);
+						})}
+					</List>
 
-				<VStack
-					modifiers={[padding({ horizontal: 24, vertical: 16 })]}
-					spacing={8}
-				>
-					<Divider />
-					<SummaryLine
-						label="ROUGH"
-						palette={palette}
-						value={`${roughText || "0"} ct`}
-					/>
-					<SummaryLine
-						label="PARTS"
-						palette={palette}
-						value={`${summary.partsCarat.toFixed(2)} ct · ${summary.yieldPct.toFixed(0)}% yield`}
-					/>
-					<SummaryLine
-						label="ALL PARTS"
-						palette={palette}
-						value={usd(summary.total)}
-					/>
-					<SummaryLine
-						label="VALUE / CT"
-						palette={palette}
-						value={usd(summary.perCarat, true)}
-					/>
+					<VStack
+						modifiers={[padding({ horizontal: 24, vertical: 16 })]}
+						spacing={8}
+					>
+						<Divider />
+						<SummaryLine
+							label="ROUGH"
+							palette={palette}
+							value={`${roughText || "0"} ct`}
+						/>
+						<SummaryLine
+							label="PARTS"
+							palette={palette}
+							value={`${summary.partsCarat.toFixed(2)} ct`}
+						/>
+						<SummaryLine
+							label="ALL PARTS"
+							palette={palette}
+							value={usd(summary.total)}
+						/>
+						<SummaryLine
+							label="VALUE / CT"
+							palette={palette}
+							value={usd(summary.perCarat, true)}
+						/>
+					</VStack>
 				</VStack>
-			</VStack>
+			</Group>
 		</BottomSheet>
 	);
 }
@@ -420,8 +442,6 @@ export function RoughCalculator() {
 	const palette = paletteFor(scheme);
 	const insets = useSafeAreaInsets();
 	const { width } = useWindowDimensions();
-	const navigation = useNavigation();
-	const { data: session } = authClient.useSession();
 	const guides = useGuides();
 
 	const priceList = useQuery(
@@ -431,22 +451,11 @@ export function RoughCalculator() {
 		})
 	);
 
-	const refresh = useMutation({
-		mutationFn: () => orpc.priceList.get.call({ force: true }),
-		onSuccess: (fetched) => {
-			queryClient.setQueryData(
-				orpc.priceList.get.queryOptions({ input: { force: false } }).queryKey,
-				fetched
-			);
-		},
-	});
-
 	const [roughText, setRoughText] = useState("");
 	const [parts, setParts] = useState<Part[]>(() => [blankPart()]);
 	const [active, setActive] = useState(0);
 	const [target, setTarget] = useState<KeypadTarget>("rough");
 	const [partsOpen, setPartsOpen] = useState(false);
-	const [profileOpen, setProfileOpen] = useState(false);
 
 	const grids = priceList.data;
 
@@ -629,30 +638,18 @@ export function RoughCalculator() {
 		[updateActive]
 	);
 
-	const openDrawer = useCallback(() => {
-		navigation.dispatch({ type: "OPEN_DRAWER" });
-	}, [navigation]);
-	const openProfile = useCallback(() => setProfileOpen(true), []);
 	const openParts = useCallback(() => setPartsOpen(true), []);
-	const handleRefresh = useCallback(() => refresh.mutate(), [refresh]);
-	const handleSignOut = useCallback(async () => {
-		setProfileOpen(false);
-		await authClient.signOut();
-		queryClient.clear();
-	}, []);
 
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
 	const sliderValue = Math.min(
 		MAX_BACK,
 		Math.max(MIN_BACK, activeQuote.backPct)
 	);
-	const failed = !(grid || priceList.isPending);
 	const wheelLabel = (text: string) => (guides ? text : null);
-	const partCount = `${parts.length} part${parts.length === 1 ? "" : "s"}`;
 
 	return (
-		/* The insets are applied once, as padding below; letting SwiftUI inset the
-		   hosting view as well is what left a gap above the header. */
+		/* Only the bottom inset is ours: the navigator's header owns the top one,
+		   and adding it here again is a double gap. */
 		<Host
 			colorScheme={scheme}
 			ignoreSafeArea="container"
@@ -666,32 +663,13 @@ export function RoughCalculator() {
 					padding({
 						bottom: insets.bottom,
 						horizontal: SCREEN_PADDING,
-						top: insets.top + BLOCK_GAP,
+						top: BLOCK_GAP,
 					}),
 					frame({ maxHeight: FILL, maxWidth: FILL }),
 				]}
 				spacing={BLOCK_GAP}
 			>
-				<Header
-					failed={failed}
-					listDate={grid?.date}
-					onOpenDrawer={openDrawer}
-					palette={palette}
-					profile={
-						<ProfileSheet
-							email={session?.user.email ?? ""}
-							isPresented={profileOpen}
-							name={session?.user.name ?? "Signed in"}
-							onIsPresentedChange={setProfileOpen}
-							onOpen={openProfile}
-							onRefresh={handleRefresh}
-							onSignOut={handleSignOut}
-							palette={palette}
-							refreshing={refresh.isPending}
-							width={width}
-						/>
-					}
-				/>
+				<ProfileSheet />
 
 				{/* The bottom line. It is pinned above the part editor because it is
 				    the number every other control on the screen is aimed at. */}
@@ -713,41 +691,44 @@ export function RoughCalculator() {
 							<Caption color={target === "rough" ? ACCENT : palette.label}>
 								ROUGH WT
 							</Caption>
-							<Text
-								modifiers={[
-									rounded(ROUGH_VALUE, "bold"),
-									foregroundStyle(palette.primary),
-									monospacedDigit(),
-									contentTransition("numericText"),
-									animation(Animation.default, roughCarat),
-								]}
-							>
-								{roughText || "0"}
-							</Text>
+							<HStack alignment="bottom" spacing={2}>
+								<Text
+									modifiers={[
+										rounded(ROUGH_VALUE, "bold"),
+										foregroundStyle(palette.primary),
+										monospacedDigit(),
+										contentTransition("numericText"),
+										animation(Animation.default, roughCarat),
+									]}
+								>
+									{roughText || "0"}
+								</Text>
+								<Caret on={target === "rough"} size={ROUGH_VALUE} />
+							</HStack>
 						</VStack>
 						<Spacer />
 						<VStack alignment="trailing" spacing={2}>
-							<Caption color={palette.label}>VALUE / CT</Caption>
+							<Caption color={palette.label}>TOTAL VALUE</Caption>
 							<Text
 								modifiers={[
 									rounded(ROUGH_VALUE, "bold"),
 									foregroundStyle(ACCENT),
 									monospacedDigit(),
 									contentTransition("numericText"),
-									animation(Animation.default, summary.perCarat),
+									animation(Animation.default, summary.total),
 								]}
 							>
-								{usd(summary.perCarat, true)}
+								{usd(summary.total)}
 							</Text>
 						</VStack>
 					</HStack>
 					<HStack>
-						<Subtext color={palette.subtle}>
-							{`${partCount} · ${summary.partsCarat.toFixed(2)} ct · ${summary.yieldPct.toFixed(0)}% yield`}
+						<Subtext color={palette.subtext}>
+							{`${summary.partsCarat.toFixed(2)} ct`}
 						</Subtext>
 						<Spacer />
-						<Subtext color={palette.subtle}>
-							{`all parts ${usd(summary.total)}`}
+						<Subtext color={palette.subtext}>
+							{`${usd(summary.perCarat, true)} /ct`}
 						</Subtext>
 					</HStack>
 				</VStack>
@@ -804,17 +785,20 @@ export function RoughCalculator() {
 							<Caption color={target === "carat" ? ACCENT : palette.label}>
 								CARAT
 							</Caption>
-							<Text
-								modifiers={[
-									rounded(PART_CARAT, "bold"),
-									foregroundStyle(palette.primary),
-									monospacedDigit(),
-									contentTransition("numericText"),
-									animation(Animation.default, activeQuote.carat),
-								]}
-							>
-								{activePart.caratText || "0"}
-							</Text>
+							<HStack alignment="bottom" spacing={2}>
+								<Text
+									modifiers={[
+										rounded(PART_CARAT, "bold"),
+										foregroundStyle(palette.primary),
+										monospacedDigit(),
+										contentTransition("numericText"),
+										animation(Animation.default, activeQuote.carat),
+									]}
+								>
+									{activePart.caratText || "0"}
+								</Text>
+								<Caret on={target === "carat"} size={PART_CARAT} />
+							</HStack>
 						</VStack>
 						<Spacer />
 						<VStack
@@ -825,17 +809,20 @@ export function RoughCalculator() {
 							<Caption color={target === "total" ? ACCENT : palette.label}>
 								TOTAL
 							</Caption>
-							<Text
-								modifiers={[
-									rounded(PART_TOTAL, "bold"),
-									foregroundStyle(ACCENT),
-									monospacedDigit(),
-									contentTransition("numericText"),
-									animation(Animation.default, activeQuote.total),
-								]}
-							>
-								{money(activeQuote.total, activeQuote.priced)}
-							</Text>
+							<HStack alignment="bottom" spacing={2}>
+								<Text
+									modifiers={[
+										rounded(PART_TOTAL, "bold"),
+										foregroundStyle(ACCENT),
+										monospacedDigit(),
+										contentTransition("numericText"),
+										animation(Animation.default, activeQuote.total),
+									]}
+								>
+									{money(activeQuote.total, activeQuote.priced)}
+								</Text>
+								<Caret on={target === "total"} size={PART_TOTAL} />
+							</HStack>
 						</VStack>
 					</HStack>
 

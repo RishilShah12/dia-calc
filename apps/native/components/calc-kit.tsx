@@ -1,8 +1,7 @@
 import type { KeypadTarget } from "@dia-calc/calc/keypad";
 import {
-	BottomSheet,
 	Button,
-	Divider,
+	Capsule,
 	GlassEffectContainer,
 	Grid,
 	HStack,
@@ -27,14 +26,13 @@ import {
 	gridCellColumns,
 	monospacedDigit,
 	onTapGesture,
+	opacity,
 	padding,
 	pickerStyle,
-	presentationDetents,
-	presentationDragIndicator,
 	tag,
 	tint,
 } from "@expo/ui/swift-ui/modifiers";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dimensions } from "react-native";
 
 import {
@@ -71,10 +69,15 @@ export const s = (size: number) => Math.round(size * SCALE);
 export const SCREEN_PADDING = 16;
 export const BLOCK_GAP = s(8);
 
-export const HEADER_H = s(40);
 /** Square, so a circular glass button wraps a square glyph rather than an oval. */
 const HEADER_GLYPH = s(22);
 export const WHEEL_HEIGHT = s(110);
+/**
+ * A caption line plus the `Wheel`'s own 4pt spacing. Handed back to the picker
+ * when guides are off, so dropping the label buys wheel height rather than
+ * leaving a hole where the label used to be.
+ */
+const CAPTION_SPACE = s(19);
 /** What a key row actually measures: the keypad never takes spare height. */
 const KEY_MIN_HEIGHT = s(52);
 const KEY_GAP = s(10);
@@ -85,11 +88,26 @@ const KEY_GAP = s(10);
  * of keys off the screen — which is exactly what the rough screen does.
  */
 const KEYPAD_H = KEY_MIN_HEIGHT * 4 + KEY_GAP * 3;
-/** Wide enough for "● RAP 12 AUG" so the header can never reflow. */
-const RAP_PILL_W = s(132);
-/** Reserved whether or not a subtext is showing. */
-const SUBTEXT_H = s(14);
+/**
+ * Reserved whether or not a subtext is showing. Sized to be read rather than
+ * merely noticed: in recut mode the "was …" lines are the whole point of the
+ * comparison, and against numerals three times their size they lose.
+ *
+ * Moves with `Subtext`'s font — a 15pt rounded face needs ~18pt of line, and a
+ * fixed frame shorter than its content clips rather than grows.
+ */
+const SUBTEXT_H = s(20);
 export const CARD_PADDING = s(18);
+/** Named because the caret beside it has to be cut to the same size. */
+const METRIC_VALUE = 20;
+/**
+ * The caret, as a share of the numeral it marks. Roughly the cap height of SF
+ * Rounded, so the bar stands exactly as tall as the digits beside it.
+ */
+const CARET_HEIGHT = 0.72;
+const CARET_WIDTH = 3;
+/** SF's descender, which the text's box includes and a bare capsule does not. */
+const CARET_DESCENDER = 0.21;
 
 /** Keys read as a dark slab in both appearances, as in the design. */
 const KEY_TINT = "#3A3735";
@@ -133,35 +151,6 @@ const KEYPAD_TARGETS: { title: string; value: KeypadTarget }[] = [
 	{ title: "$/CT", value: "net" },
 	{ title: "TOTAL", value: "total" },
 ];
-
-const MONTHS = [
-	"JAN",
-	"FEB",
-	"MAR",
-	"APR",
-	"MAY",
-	"JUN",
-	"JUL",
-	"AUG",
-	"SEP",
-	"OCT",
-	"NOV",
-	"DEC",
-];
-
-/** `2026-08-07` → `7 AUG`. Short and near-constant width, unlike the ISO form. */
-function formatRapDate(iso: string | undefined): string {
-	if (!iso) {
-		return EMPTY;
-	}
-	const [, month, day] = iso.split("-");
-	const index = Number.parseInt(month ?? "", 10) - 1;
-	const name = MONTHS[index];
-	if (!(name && day)) {
-		return iso;
-	}
-	return `${Number.parseInt(day, 10)} ${name}`;
-}
 
 /**
  * A typed total is a per-carat price the dealer hasn't divided yet, which is
@@ -223,7 +212,7 @@ export function Subtext({
 	return (
 		<Text
 			modifiers={[
-				rounded(11, "medium"),
+				rounded(15, "semibold"),
 				foregroundStyle(color),
 				monospacedDigit(),
 				frame({ height: SUBTEXT_H }),
@@ -231,6 +220,51 @@ export function Subtext({
 		>
 			{children}
 		</Text>
+	);
+}
+
+/**
+ * Half a second on, half a second off, forever — SwiftUI's own caret cadence.
+ * `@expo/ui` has no `repeatForever`, and a count this size is 83 minutes of
+ * blinking, which outlasts any session anyone spends pricing one stone.
+ */
+const BLINK = Animation.easeInOut({ duration: 0.5 }).repeat({
+	autoreverses: true,
+	repeatCount: 10_000,
+});
+
+/**
+ * The bar that says which field the keypad is aimed at. The caption turning
+ * orange says the same thing, but only to someone who already knows to look.
+ *
+ * The blink is native: one render flips `dim`, and SwiftUI repeats the fade on
+ * its own. Isolated in its own component so that render is this text node and
+ * nothing else — the numerals beside it are not re-sent twice a second.
+ */
+export function Caret({ on, size }: { on: boolean; size: number }) {
+	const [dim, setDim] = useState(false);
+
+	useEffect(() => setDim(on), [on]);
+
+	if (!on) {
+		return null;
+	}
+	// A drawn bar rather than a "|" glyph, which carries its own side bearings
+	// and sits low in the em box. Aligned by box bottom rather than baseline:
+	// the bridge wraps every stack child in its own container, so a `Text`
+	// hands `firstTextBaseline` the container's edge and not the type's. The
+	// bottom padding is the descender that box bottom includes and the caret
+	// does not, which is what lands it on the baseline.
+	return (
+		<Capsule
+			modifiers={[
+				frame({ height: s(size * CARET_HEIGHT), width: s(CARET_WIDTH) }),
+				padding({ bottom: s(size * CARET_DESCENDER) }),
+				foregroundStyle(ACCENT),
+				opacity(dim ? 0.1 : 1),
+				animation(BLINK, dim),
+			]}
+		/>
 	);
 }
 
@@ -263,19 +297,24 @@ export function Metric({
 	return (
 		<VStack alignment="leading" modifiers={wrapper} spacing={2}>
 			<Caption color={active ? ACCENT : palette.label}>{label}</Caption>
-			<Text
-				modifiers={[
-					rounded(22, "semibold"),
-					foregroundStyle(color),
-					monospacedDigit(),
-					contentTransition("numericText"),
-					animation(Animation.default, animatedOn),
-				]}
-			>
-				{value}
-			</Text>
+			{/* `active` is exactly "the keypad is pointed here", so the caret comes
+			    with it and both screens get this metric's caret for free. */}
+			<HStack alignment="bottom" spacing={2}>
+				<Text
+					modifiers={[
+						rounded(METRIC_VALUE, "semibold"),
+						foregroundStyle(color),
+						monospacedDigit(),
+						contentTransition("numericText"),
+						animation(Animation.default, animatedOn),
+					]}
+				>
+					{value}
+				</Text>
+				<Caret on={active} size={METRIC_VALUE} />
+			</HStack>
 			{subtext === undefined ? null : (
-				<Subtext color={palette.subtle}>{subtext}</Subtext>
+				<Subtext color={palette.subtext}>{subtext}</Subtext>
 			)}
 		</VStack>
 	);
@@ -300,11 +339,18 @@ export function Wheel({
 	selection: string;
 	width: number;
 }) {
+	// Guides off drops the caption, and the wheel takes the height back rather
+	// than leaving a gap where the label used to be.
+	const wheelHeight = label ? height : height + CAPTION_SPACE;
 	return (
 		<VStack modifiers={[frame({ width })]} spacing={4}>
 			{label ? <Caption color={labelColor}>{label}</Caption> : null}
 			<Picker
-				modifiers={[pickerStyle("wheel"), frame({ height, width }), clipped()]}
+				modifiers={[
+					pickerStyle("wheel"),
+					frame({ height: wheelHeight, width }),
+					clipped(),
+				]}
 				onSelectionChange={onChange}
 				selection={selection}
 			>
@@ -488,20 +534,23 @@ function EndLabel({ children, color }: { children: string; color: string }) {
  * button, where the tall frame this replaced read as an oval.
  */
 export function RoundGlassButton({
+	color = KEY_TINT,
 	onPress,
 	symbol,
 }: {
+	color?: string;
 	onPress: () => void;
 	symbol:
 		| "line.3.horizontal"
 		| "list.bullet"
 		| "person.crop.circle"
 		| "plus"
-		| "trash";
+		| "trash"
+		| "xmark";
 }) {
 	return (
 		<Button
-			modifiers={[keyStyle, buttonBorderShape("circle"), tint(KEY_TINT)]}
+			modifiers={[keyStyle, buttonBorderShape("circle"), tint(color)]}
 			onPress={onPress}
 		>
 			<Image
@@ -577,164 +626,5 @@ export function DiscountSlider({
 				value={value}
 			/>
 		</VStack>
-	);
-}
-
-const SHEET_PADDING = 24;
-
-function SheetRow({
-	busy = false,
-	label,
-	onPress,
-	symbol,
-	tone,
-	width,
-}: {
-	busy?: boolean;
-	label: string;
-	onPress: () => void;
-	symbol: "arrow.clockwise" | "rectangle.portrait.and.arrow.right";
-	tone: string;
-	width: number;
-}) {
-	const title = busy ? "Refreshing…" : label;
-	return (
-		<Button
-			modifiers={[keyStyle, tint(KEY_TINT), frame({ height: 52, width })]}
-			onPress={onPress}
-		>
-			<HStack spacing={10}>
-				<Image color={tone} size={17} systemName={symbol} />
-				<Text modifiers={[rounded(16, "medium"), foregroundStyle(tone)]}>
-					{title}
-				</Text>
-				<Spacer />
-			</HStack>
-		</Button>
-	);
-}
-
-export function ProfileSheet({
-	email,
-	isPresented,
-	name,
-	onIsPresentedChange,
-	onOpen,
-	onRefresh,
-	onSignOut,
-	palette,
-	refreshing,
-	width,
-}: {
-	email: string;
-	isPresented: boolean;
-	name: string;
-	onIsPresentedChange: (next: boolean) => void;
-	onOpen: () => void;
-	onRefresh: () => void;
-	onSignOut: () => void;
-	palette: CalcPalette;
-	refreshing: boolean;
-	width: number;
-}) {
-	const rowWidth = width - SHEET_PADDING * 2;
-	return (
-		<BottomSheet
-			anchor={<RoundGlassButton onPress={onOpen} symbol="person.crop.circle" />}
-			isPresented={isPresented}
-			modifiers={[
-				presentationDetents(["large"]),
-				presentationDragIndicator("visible"),
-			]}
-			onIsPresentedChange={onIsPresentedChange}
-		>
-			<VStack
-				alignment="leading"
-				modifiers={[padding({ all: SHEET_PADDING }), frame({ width })]}
-				spacing={20}
-			>
-				<HStack spacing={14}>
-					<Image
-						color={ACCENT}
-						size={44}
-						systemName="person.crop.circle.fill"
-					/>
-					<VStack alignment="leading" spacing={2}>
-						<Text
-							modifiers={[
-								rounded(20, "bold"),
-								foregroundStyle(palette.primary),
-							]}
-						>
-							{name}
-						</Text>
-						<Text modifiers={[rounded(13), foregroundStyle(palette.label)]}>
-							{email}
-						</Text>
-					</VStack>
-					<Spacer />
-				</HStack>
-
-				<Divider />
-
-				<SheetRow
-					busy={refreshing}
-					label="Refresh Rap price list"
-					onPress={onRefresh}
-					symbol="arrow.clockwise"
-					tone={palette.primary}
-					width={rowWidth}
-				/>
-				<SheetRow
-					label="Sign out"
-					onPress={onSignOut}
-					symbol="rectangle.portrait.and.arrow.right"
-					tone="#D9544D"
-					width={rowWidth}
-				/>
-				<Spacer />
-			</VStack>
-		</BottomSheet>
-	);
-}
-
-/** Fixed height and a fixed-width status pill, so the header can never reflow. */
-export function Header({
-	failed,
-	listDate,
-	onOpenDrawer,
-	palette,
-	profile,
-}: {
-	failed: boolean;
-	listDate: string | undefined;
-	onOpenDrawer: () => void;
-	palette: CalcPalette;
-	/** The profile sheet, whose anchor is the trailing button. */
-	profile: React.ReactNode;
-}) {
-	const status = failed ? "● NO LIST" : `● RAP ${formatRapDate(listDate)}`;
-	return (
-		<HStack modifiers={[frame({ height: HEADER_H })]} spacing={10}>
-			<RoundGlassButton onPress={onOpenDrawer} symbol="line.3.horizontal" />
-			<Text modifiers={[rounded(23, "bold"), foregroundStyle(palette.primary)]}>
-				EZ
-				<Text modifiers={[foregroundStyle(ACCENT)]}>Calc</Text>
-			</Text>
-			<Spacer />
-			<Text
-				modifiers={[
-					rounded(13, "semibold"),
-					foregroundStyle(failed ? "#D9544D" : palette.label),
-					monospacedDigit(),
-					frame({ width: RAP_PILL_W }),
-					padding({ vertical: 9 }),
-					glassEffect({ shape: "capsule" }),
-				]}
-			>
-				{status}
-			</Text>
-			{profile}
-		</HStack>
 	);
 }

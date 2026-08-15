@@ -34,8 +34,7 @@ import {
 	onTapGesture,
 	padding,
 } from "@expo/ui/swift-ui/modifiers";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigation } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { useColorScheme, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,17 +42,16 @@ import {
 	BLOCK_GAP,
 	CARD_PADDING,
 	Caption,
+	Caret,
 	DiscountSlider,
 	EMPTY,
 	FILL,
 	GLASS_CARD,
-	Header,
 	Key,
 	Keypad,
 	MAX_BACK,
 	Metric,
 	MIN_BACK,
-	ProfileSheet,
 	perCaratFromTotal,
 	pricedBy,
 	rounded,
@@ -62,13 +60,42 @@ import {
 	s,
 	Wheel,
 } from "@/components/calc-kit";
+import { ProfileSheet } from "@/components/calc-profile";
 import { ACCENT, paletteFor } from "@/components/calc-theme";
-import { authClient } from "@/lib/auth-client";
 import { useGuides } from "@/lib/guides";
-import { orpc, queryClient } from "@/utils/orpc";
+import { orpc } from "@/utils/orpc";
+
+/** Named because the caret beside each has to be cut to the same size. */
+const CARAT_VALUE = 38;
+const TOTAL_VALUE = 30;
 
 const signed = (value: number, format: (n: number) => string) =>
 	`${value >= 0 ? "+" : "−"}${format(Math.abs(value))}`;
+
+/**
+ * The line under the recut total. Recut deliberately starts with an empty
+ * weight, so "no price" would be wrong the moment the mode is switched on —
+ * there is simply nothing to compare yet. The empty string still holds its
+ * height, so the card does not resize once a weight arrives.
+ *
+ * It leads with the total the stone was worth before, not with the difference:
+ * the difference is already the number in orange changing under the dealer's
+ * thumb, and every other line on this card reads "was …" too.
+ */
+function totalWasFor(
+	priced: boolean,
+	afterCarat: number,
+	baseTotal: string,
+	deltaPct: number
+): string {
+	if (afterCarat <= 0) {
+		return "";
+	}
+	if (!priced) {
+		return "no price for that grade";
+	}
+	return `was ${baseTotal} · ${signed(deltaPct, (n) => `${n.toFixed(1)}%`)}`;
+}
 
 /** Everything the summary card shows, already formatted for display. */
 interface Readout {
@@ -99,8 +126,6 @@ export function Calculator() {
 	const palette = paletteFor(scheme);
 	const insets = useSafeAreaInsets();
 	const { width } = useWindowDimensions();
-	const navigation = useNavigation();
-	const { data: session } = authClient.useSession();
 
 	const priceList = useQuery(
 		orpc.priceList.get.queryOptions({
@@ -108,16 +133,6 @@ export function Calculator() {
 			staleTime: 60 * 60 * 1000,
 		})
 	);
-
-	const refresh = useMutation({
-		mutationFn: () => orpc.priceList.get.call({ force: true }),
-		onSuccess: (grids) => {
-			queryClient.setQueryData(
-				orpc.priceList.get.queryOptions({ input: { force: false } }).queryKey,
-				grids
-			);
-		},
-	});
 
 	const [shapeName, setShapeName] = useState("Round");
 	const [caratText, setCaratText] = useState("1.00");
@@ -130,7 +145,6 @@ export function Calculator() {
 		"back"
 	);
 	const [target, setTarget] = useState<KeypadTarget>("carat");
-	const [profileOpen, setProfileOpen] = useState(false);
 	const guides = useGuides();
 
 	// The recut ("after") stone. Seeded from the base stone when the mode is
@@ -281,8 +295,10 @@ export function Calculator() {
 	const toggleRecut = useCallback(() => {
 		setRecut((on) => {
 			if (!on) {
-				// Seed the after-stone from whatever the base stone is right now.
-				setRecutCaratText(caratText);
+				// Seed the after-stone's grades from the base stone, but not its
+				// weight: recut exists because the stone is about to be made
+				// lighter, and the dealer's next act is typing the new weight.
+				setRecutCaratText("");
 				setRecutColor(color);
 				setRecutClarity(clarity);
 				setRecutBackText(String(readout.backPct));
@@ -290,32 +306,20 @@ export function Calculator() {
 			}
 			return !on;
 		});
-	}, [caratText, clarity, color, readout.backPct]);
-
-	const openDrawer = useCallback(() => {
-		navigation.dispatch({ type: "OPEN_DRAWER" });
-	}, [navigation]);
-	const openProfile = useCallback(() => setProfileOpen(true), []);
-	const handleRefresh = useCallback(() => refresh.mutate(), [refresh]);
-	const handleSignOut = useCallback(async () => {
-		setProfileOpen(false);
-		await authClient.signOut();
-		queryClient.clear();
-	}, []);
+	}, [clarity, color, readout.backPct]);
 
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
 	const sliderValue = Math.min(MAX_BACK, Math.max(MIN_BACK, readout.backPct));
 	const wheelColor = recut ? recutColor : color;
 	const wheelClarity = recut ? recutClarity : clarity;
-	const failed = !(grid || priceList.isPending);
 	// All three wheels share one caption colour; recut is a property of the
 	// stone being priced, not of one wheel.
 	const captionColor = recut ? ACCENT : palette.label;
 	const wheelLabel = (text: string) => (guides ? text : null);
 
 	return (
-		/* The insets are applied once, as padding below; letting SwiftUI inset the
-		   hosting view as well is what left a gap above the header. */
+		/* Only the bottom inset is ours: the navigator's header owns the top one,
+		   and adding it here again is a double gap. */
 		<Host
 			colorScheme={scheme}
 			ignoreSafeArea="container"
@@ -329,32 +333,13 @@ export function Calculator() {
 					padding({
 						bottom: insets.bottom + BLOCK_GAP,
 						horizontal: SCREEN_PADDING,
-						top: insets.top + BLOCK_GAP,
+						top: BLOCK_GAP,
 					}),
 					frame({ maxHeight: FILL, maxWidth: FILL }),
 				]}
 				spacing={BLOCK_GAP}
 			>
-				<Header
-					failed={failed}
-					listDate={grid?.date}
-					onOpenDrawer={openDrawer}
-					palette={palette}
-					profile={
-						<ProfileSheet
-							email={session?.user.email ?? ""}
-							isPresented={profileOpen}
-							name={session?.user.name ?? "Signed in"}
-							onIsPresentedChange={setProfileOpen}
-							onOpen={openProfile}
-							onRefresh={handleRefresh}
-							onSignOut={handleSignOut}
-							palette={palette}
-							refreshing={refresh.isPending}
-							width={width}
-						/>
-					}
-				/>
+				<ProfileSheet />
 
 				<VStack
 					alignment="leading"
@@ -374,21 +359,24 @@ export function Calculator() {
 							<Caption color={target === "carat" ? ACCENT : palette.label}>
 								CARAT
 							</Caption>
-							<Text
-								modifiers={[
-									rounded(44, "bold"),
-									foregroundStyle(palette.primary),
-									monospacedDigit(),
-									contentTransition("numericText"),
-									animation(
-										Animation.default,
-										Number.parseFloat(readout.caratText) || 0
-									),
-								]}
-							>
-								{readout.caratText}
-							</Text>
-							<Subtext color={palette.subtle}>{readout.caratWas}</Subtext>
+							<HStack alignment="bottom" spacing={2}>
+								<Text
+									modifiers={[
+										rounded(CARAT_VALUE, "bold"),
+										foregroundStyle(palette.primary),
+										monospacedDigit(),
+										contentTransition("numericText"),
+										animation(
+											Animation.default,
+											Number.parseFloat(readout.caratText) || 0
+										),
+									]}
+								>
+									{readout.caratText}
+								</Text>
+								<Caret on={target === "carat"} size={CARAT_VALUE} />
+							</HStack>
+							<Subtext color={palette.subtext}>{readout.caratWas}</Subtext>
 						</VStack>
 						<Spacer />
 						<VStack
@@ -399,18 +387,21 @@ export function Calculator() {
 							<Caption color={target === "total" ? ACCENT : palette.label}>
 								TOTAL
 							</Caption>
-							<Text
-								modifiers={[
-									rounded(34, "bold"),
-									foregroundStyle(ACCENT),
-									monospacedDigit(),
-									contentTransition("numericText"),
-									animation(Animation.default, readout.total),
-								]}
-							>
-								{readout.totalText}
-							</Text>
-							<Subtext color={palette.subtle}>{readout.totalWas}</Subtext>
+							<HStack alignment="bottom" spacing={2}>
+								<Text
+									modifiers={[
+										rounded(TOTAL_VALUE, "bold"),
+										foregroundStyle(ACCENT),
+										monospacedDigit(),
+										contentTransition("numericText"),
+										animation(Animation.default, readout.total),
+									]}
+								>
+									{readout.totalText}
+								</Text>
+								<Caret on={target === "total"} size={TOTAL_VALUE} />
+							</HStack>
+							<Subtext color={palette.subtext}>{readout.totalWas}</Subtext>
 						</VStack>
 					</HStack>
 
@@ -604,12 +595,7 @@ function buildReadout(input: {
 	const afterList = afterFound.perCarat ?? 0;
 	const afterBack = Number.parseFloat(input.recutBackText) || 0;
 	const after = quote(afterList, afterCarat, { backPct: afterBack });
-	const { delta, deltaPct, yieldPct } = compareQuotes(
-		base,
-		after,
-		baseCarat,
-		afterCarat
-	);
+	const { deltaPct } = compareQuotes(base, after, baseCarat, afterCarat);
 	const priced = afterFound.perCarat !== null;
 
 	return {
@@ -617,7 +603,7 @@ function buildReadout(input: {
 		backText: pct(after.backPct),
 		backWas: `was ${pct(base.backPct)}`,
 		caratText: input.recutCaratText || "0",
-		caratWas: `was ${input.caratText} · ${yieldPct.toFixed(0)}% yield`,
+		caratWas: `was ${input.caratText}`,
 		listPerCarat: afterList,
 		listText: money(afterList, priced),
 		listWas: `was ${money(baseList, baseFound.perCarat !== null)}`,
@@ -628,8 +614,13 @@ function buildReadout(input: {
 		total: after.total,
 		totalRaw: (after.total || 0).toFixed(0),
 		totalText: money(after.total, priced),
-		totalWas: priced
-			? `${signed(deltaPct, (n) => `${n.toFixed(1)}%`)} · ${signed(delta, usd)}`
-			: "no price for that grade",
+		// Recut opens with no weight, by design — until one is typed there is
+		// nothing to compare, which is not the same as the grade being unpriced.
+		totalWas: totalWasFor(
+			priced,
+			afterCarat,
+			money(base.total, baseFound.perCarat !== null),
+			deltaPct
+		),
 	};
 }
