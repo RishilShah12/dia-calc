@@ -1,26 +1,94 @@
 @import "@dia-calc/ui/globals.css";
 
+/**
+ * The native palette, verbatim from `apps/native/components/calc-theme.ts` and
+ * `calc-base.ts`, written over shadcn's neutral greys rather than layered beside
+ * them. Overriding the base tokens is what makes the sidebar, sheets, tables and
+ * switches come out in the app's cream without a `className` fight in every
+ * component: they already paint with `--card`, `--border`, `--muted-foreground`.
+ *
+ * Hex, not oklch, so the three platforms are the same colour rather than nearly.
+ */
+
 :root {
-	--calc-accent: oklch(0.72 0.16 55);
-	--calc-accent-foreground: oklch(0.99 0.01 90);
-	--calc-key: oklch(0.96 0.008 90);
-	--calc-surface: oklch(0.97 0.008 90);
-	--calc-total: oklch(0.52 0.14 250);
+	--background: #f6eee6;
+	--foreground: #1c1917;
+	--card: #fffbf7;
+	--card-foreground: #1c1917;
+	--popover: #fffbf7;
+	--popover-foreground: #1c1917;
+	--secondary: #efe6db;
+	--secondary-foreground: #1c1917;
+	--muted: #efe6db;
+	--muted-foreground: #8c8378;
+	--accent: #efe6db;
+	--accent-foreground: #1c1917;
+	--border: #e4d9cc;
+	--input: #e4d9cc;
+	--sidebar: #fffbf7;
+	--sidebar-foreground: #1c1917;
+	--sidebar-accent: #f6eee6;
+	--sidebar-accent-foreground: #1c1917;
+	--sidebar-border: #e4d9cc;
+
+	/** "was $5,400" under a recut value: quiet in tone, but not in weight. */
+	--calc-subtext: #3a342e;
+	/** Furniture that must not compete: slider ends, a part's grade line. */
+	--calc-subtle: #a79c90;
 }
 
 .dark {
-	--calc-accent: oklch(0.76 0.15 55);
-	--calc-accent-foreground: oklch(0.22 0.03 55);
-	--calc-key: oklch(0.28 0.015 260);
-	--calc-surface: oklch(0.18 0.012 260);
-	--calc-total: oklch(0.76 0.1 250);
+	--background: #0c0a09;
+	--foreground: #f5f1ec;
+	--card: #1c1917;
+	--card-foreground: #f5f1ec;
+	--popover: #1c1917;
+	--popover-foreground: #f5f1ec;
+	--secondary: #26221f;
+	--secondary-foreground: #f5f1ec;
+	--muted: #26221f;
+	--muted-foreground: #8b8279;
+	--accent: #26221f;
+	--accent-foreground: #f5f1ec;
+	--border: #2e2926;
+	--input: #2e2926;
+	--sidebar: #1c1917;
+	--sidebar-foreground: #f5f1ec;
+	--sidebar-accent: #0c0a09;
+	--sidebar-accent-foreground: #f5f1ec;
+	--sidebar-border: #2e2926;
+
+	--calc-subtext: #e0dad3;
+	--calc-subtle: #6e665e;
+}
+
+/**
+ * Fixed in both appearances, exactly as in native. The keys read as a dark slab
+ * in either scheme, so their ink cannot follow the appearance or it inverts into
+ * near-black on near-black.
+ */
+:root,
+.dark {
+	--primary: #e8913a;
+	--primary-foreground: #ffffff;
+	--sidebar-primary: #e8913a;
+	--sidebar-primary-foreground: #ffffff;
+	--ring: #e8913a;
+	--destructive: #d9544d;
+	--calc-accent: #e8913a;
+	--calc-accent-foreground: #ffffff;
+	--calc-key: #3a3735;
+	--calc-key-foreground: #f5f1ec;
 }
 
 @theme inline {
+	--font-sans: var(--font-nunito), sans-serif;
 	--color-calc-accent: var(--calc-accent);
 	--color-calc-accent-foreground: var(--calc-accent-foreground);
 	--color-calc-key: var(--calc-key);
-	--color-calc-surface: var(--calc-surface);
-	--color-calc-total: var(--calc-total);
-	--radius-calc: 1.25rem;
+	--color-calc-key-foreground: var(--calc-key-foreground);
+	--color-calc-subtext: var(--calc-subtext);
+	--color-calc-subtle: var(--calc-subtle);
+	/** `CARD_RADIUS` — every card in the app, and the rap list's table. */
+	--radius-calc: 1.75rem;
 }

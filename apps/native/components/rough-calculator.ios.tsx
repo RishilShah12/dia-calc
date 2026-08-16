@@ -1,4 +1,11 @@
 import { type RoughSummary, usd } from "@dia-calc/calc/rap-calc";
+import {
+	money,
+	type Part,
+	type PartQuote,
+	partLabel,
+	pct,
+} from "@dia-calc/calc/rough";
 import { findShape, SHAPES } from "@dia-calc/calc/shapes";
 import {
 	BottomSheet,
@@ -57,14 +64,7 @@ import {
 } from "@/components/calc-kit";
 import { ProfileSheet } from "@/components/calc-profile";
 import { ACCENT, type CalcPalette } from "@/components/calc-theme";
-import {
-	money,
-	type Part,
-	type PartQuote,
-	partLabel,
-	pct,
-	useRoughCalc,
-} from "@/hooks/use-rough-calc";
+import { useRoughCalc } from "@/hooks/use-rough-calc";
 
 /**
  * The rough calculator answers a different question from the polish one: not

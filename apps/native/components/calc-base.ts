@@ -1,4 +1,3 @@
-import type { KeypadTarget } from "@dia-calc/calc/keypad";
 import { Dimensions, Platform } from "react-native";
 
 /**
@@ -104,12 +103,6 @@ export const KEY_LABEL = "#F5F1EC";
 /** Sign out, delete a part, a failed price list. */
 export const DESTRUCTIVE = "#D9544D";
 
-/** The slider covers list price down to zero in 1% steps — 100 of them. */
-export const MIN_BACK = -100;
-export const MAX_BACK = 0;
-
-export const EMPTY = "—";
-
 export type RoundedWeight = "regular" | "medium" | "semibold" | "bold";
 
 /**
@@ -131,16 +124,3 @@ const ANDROID_ROUNDED: Record<RoundedWeight, string> = {
 
 export const roundedFamily = (weight: RoundedWeight = "regular") =>
 	Platform.OS === "ios" ? ".AppleSystemUIFontRounded" : ANDROID_ROUNDED[weight];
-
-export const DIGIT_ROWS = [
-	["7", "8", "9"],
-	["4", "5", "6"],
-	["1", "2", "3"],
-] as const;
-
-/** Abbreviated hard: three segments share half the keypad's width. */
-export const KEYPAD_TARGETS: { title: string; value: KeypadTarget }[] = [
-	{ title: "CT", value: "carat" },
-	{ title: "$/CT", value: "net" },
-	{ title: "TOTAL", value: "total" },
-];

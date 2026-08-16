@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Nunito } from "next/font/google";
 
 import "../index.css";
-import Header from "@/components/header";
 import Providers from "@/components/providers";
 
-const geistSans = Geist({
+/**
+ * Nunito is the face the Android app bundles to stand in for SF Rounded, so the
+ * web app is set in literally the same type rather than an approximation of it.
+ */
+const nunito = Nunito({
 	subsets: ["latin"],
-	variable: "--font-geist-sans",
-});
-
-const geistMono = Geist_Mono({
-	subsets: ["latin"],
-	variable: "--font-geist-mono",
+	variable: "--font-nunito",
 });
 
 export const metadata: Metadata = {
-	description: "dia-calc",
-	title: "dia-calc",
+	description: "Rapaport pricing for polished and rough diamonds",
+	title: "EZCalc",
 };
 
 export default function RootLayout({
@@ -27,15 +25,8 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-			>
-				<Providers>
-					<div className="mx-auto flex h-svh w-full max-w-md flex-col">
-						<Header />
-						<div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-					</div>
-				</Providers>
+			<body className={`${nunito.variable} antialiased`}>
+				<Providers>{children}</Providers>
 			</body>
 		</html>
 	);

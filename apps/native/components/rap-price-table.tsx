@@ -1,7 +1,7 @@
-import { type PriceGrid, usd } from "@dia-calc/calc/rap-calc";
-import type { RAP_LISTS } from "@dia-calc/calc/shapes";
+import { type Picked, useRapList as useRapListState } from "@dia-calc/calc/rap";
+import { EMPTY, usd } from "@dia-calc/calc/rap-calc";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
 	Animated,
 	Pressable,
@@ -11,7 +11,7 @@ import {
 	View,
 } from "react-native";
 
-import { CARD_RADIUS, EMPTY, roundedFamily, s } from "@/components/calc-base";
+import { CARD_RADIUS, roundedFamily, s } from "@/components/calc-base";
 import {
 	ACCENT,
 	type CalcPalette,
@@ -19,7 +19,6 @@ import {
 	paletteFor,
 	type Scheme,
 } from "@/components/calc-theme";
-import { useGuides } from "@/lib/guides";
 import { orpc } from "@/utils/orpc";
 
 /**
@@ -49,14 +48,6 @@ const LABEL_W = s(46);
 
 /** The row and column a tapped cell belongs to, so the eye can follow both. */
 const CROSS_TINT = `${ACCENT}1F`;
-
-/** Structurally `RapList` from `shapes`, spelled out to leave that name free. */
-export type ListName = (typeof RAP_LISTS)[number];
-
-export interface Picked {
-	clarity: string;
-	color: string;
-}
 
 const styles = StyleSheet.create({
 	caption: {
@@ -374,10 +365,14 @@ export function PriceTablePlaceholder({
 	);
 }
 
+/**
+ * The state behind the table lives in `@dia-calc/calc` so the web screen reads
+ * the same one; what stays here is the query and the palette, as on the two
+ * calculator screens.
+ */
 export function useRapList() {
 	const scheme: Scheme = useColorScheme() === "dark" ? "dark" : "light";
 	const palette = paletteFor(scheme);
-	const guides = useGuides();
 
 	const priceList = useQuery(
 		orpc.priceList.get.queryOptions({
@@ -386,55 +381,10 @@ export function useRapList() {
 		})
 	);
 
-	const [list, setList] = useState<ListName>("Round");
-	const [bracketIndex, setBracketIndex] = useState(0);
-	const [picked, setPicked] = useState<Picked | null>(null);
-
-	const grid: PriceGrid | undefined = priceList.data?.find(
-		(entry) => entry.shape === list
-	);
-	const brackets = grid?.brackets ?? [];
-
-	// Pear publishes fewer brackets than Round, so a switch can strand the
-	// selection past the end of the new list.
-	useEffect(() => {
-		if (brackets.length && bracketIndex >= brackets.length) {
-			setBracketIndex(brackets.length - 1);
-		}
-	}, [brackets.length, bracketIndex]);
-
-	const handleList = useCallback((next: string) => {
-		setList(next as ListName);
-		setPicked(null);
-	}, []);
-	const handleBracket = useCallback((next: string) => {
-		setBracketIndex(Number.parseInt(next, 10));
-		setPicked(null);
-	}, []);
-
-	const safeIndex = Math.min(bracketIndex, Math.max(brackets.length - 1, 0));
-	const prices = grid?.prices[safeIndex] ?? [];
-	const pickedPrice =
-		picked && grid
-			? (prices[grid.colors.indexOf(picked.color)]?.[
-					grid.clarities.indexOf(picked.clarity)
-				] ?? null)
-			: null;
-
 	return {
-		brackets,
-		grid,
-		guides,
-		handleBracket,
-		handleList,
+		...useRapListState(priceList.data),
 		isPending: priceList.isPending,
-		list,
 		palette,
-		picked,
-		pickedPrice,
-		prices,
-		safeIndex,
 		scheme,
-		setPicked,
 	};
 }

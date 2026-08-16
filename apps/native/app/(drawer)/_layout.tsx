@@ -1,3 +1,4 @@
+import { toggleGuides, useGuides } from "@dia-calc/calc/guides";
 import {
 	Drawer,
 	type DrawerContentComponentProps,
@@ -8,7 +9,6 @@ import { SymbolView } from "expo-symbols";
 import { StyleSheet, Switch, Text, useColorScheme, View } from "react-native";
 
 import { ACCENT, ON_ACCENT, paletteFor } from "@/components/calc-theme";
-import { toggleGuides, useGuides } from "@/lib/guides";
 
 /**
  * The drawer reads the same palette the calculators do rather than

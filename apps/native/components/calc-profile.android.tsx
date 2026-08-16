@@ -1,3 +1,4 @@
+import { formatRapDate } from "@dia-calc/calc/rap-calc";
 import {
 	Column,
 	ModalBottomSheet,
@@ -21,7 +22,7 @@ import {
 	rounded,
 } from "@/components/calc-kit-compose";
 import { ACCENT, type CalcPalette } from "@/components/calc-theme";
-import { formatRapDate, useProfileSheet } from "@/hooks/use-profile-sheet";
+import { useProfileSheet } from "@/hooks/use-profile-sheet";
 
 /**
  * The account sheet on Android.

@@ -6,7 +6,11 @@
   "exports": {
     "./rap-calc": "./src/rap-calc.ts",
     "./shapes": "./src/shapes.ts",
-    "./keypad": "./src/keypad.ts"
+    "./keypad": "./src/keypad.ts",
+    "./guides": "./src/guides.ts",
+    "./polish": "./src/polish.ts",
+    "./rough": "./src/rough.ts",
+    "./rap": "./src/rap.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
@@ -15,6 +19,11 @@
   "devDependencies": {
     "@dia-calc/config": "workspace:*",
     "@types/node": "^22.20.1",
+    "@types/react": "^19.2.18",
+    "react": "^19.2.8",
     "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "react": ">=19"
   }
 }

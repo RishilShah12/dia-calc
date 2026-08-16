@@ -1,4 +1,9 @@
-import type { KeypadTarget } from "@dia-calc/calc/keypad";
+import {
+	DIGIT_ROWS,
+	KEYPAD_TARGETS,
+	type KeypadTarget,
+} from "@dia-calc/calc/keypad";
+import { MAX_BACK, MIN_BACK } from "@dia-calc/calc/rap-calc";
 import {
 	Button,
 	Capsule,
@@ -40,16 +45,12 @@ import {
 	CARET_DESCENDER,
 	CARET_HEIGHT,
 	CARET_WIDTH,
-	DIGIT_ROWS,
 	HEADER_GLYPH,
 	KEY_GAP,
 	KEY_MIN_HEIGHT,
 	KEY_TINT,
 	KEYPAD_H,
-	KEYPAD_TARGETS,
-	MAX_BACK,
 	METRIC_VALUE,
-	MIN_BACK,
 	SUBTEXT_H,
 	s,
 	WHEEL_HEIGHT,

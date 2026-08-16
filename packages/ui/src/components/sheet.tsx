@@ -2,6 +2,7 @@
 
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 import { Button } from "@dia-calc/ui/components/button";
+
 import { cn } from "@dia-calc/ui/lib/utils";
 import { XIcon } from "lucide-react";
 import type * as React from "react";
@@ -42,8 +43,8 @@ function SheetContent({
 	showCloseButton = true,
 	...props
 }: SheetPrimitive.Popup.Props & {
+	side?: "top" | "right" | "bottom" | "left";
 	showCloseButton?: boolean;
-	side?: "bottom" | "left" | "right" | "top";
 }) {
 	return (
 		<SheetPortal>
@@ -58,7 +59,7 @@ function SheetContent({
 				{...props}
 			>
 				{children}
-				{showCloseButton ? (
+				{showCloseButton && (
 					<SheetPrimitive.Close
 						data-slot="sheet-close"
 						render={
@@ -72,7 +73,7 @@ function SheetContent({
 						<XIcon />
 						<span className="sr-only">Close</span>
 					</SheetPrimitive.Close>
-				) : null}
+				)}
 			</SheetPrimitive.Popup>
 		</SheetPortal>
 	);

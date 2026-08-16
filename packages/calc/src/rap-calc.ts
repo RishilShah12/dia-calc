@@ -281,8 +281,47 @@ const INR_WHOLE = new Intl.NumberFormat("en-IN", {
 export const usd = (amount: number, cents = false) =>
 	(cents ? USD_CENTS : USD_WHOLE).format(amount);
 
+/** Stands in for a number the list does not publish. Never a zero: a zero is a price. */
+export const EMPTY = "—";
+
+/** The discount slider covers list price down to zero in 1% steps — 100 of them. */
+export const MIN_BACK = -100;
+export const MAX_BACK = 0;
+
 export const inr = (usdAmount: number, rate: number) =>
 	INR_WHOLE.format(usdAmount * rate);
 
 export const formatBracket = (bracket: [number, number]) =>
 	`${bracket[0].toFixed(2)} – ${bracket[1].toFixed(2)} ct`;
+
+const MONTHS = [
+	"JAN",
+	"FEB",
+	"MAR",
+	"APR",
+	"MAY",
+	"JUN",
+	"JUL",
+	"AUG",
+	"SEP",
+	"OCT",
+	"NOV",
+	"DEC",
+];
+
+/**
+ * `2026-08-07` → `7 AUG`. Short and near-constant width, unlike the ISO form,
+ * which matters because this sits in a pill beside the account button.
+ */
+export function formatRapDate(iso: string | null | undefined): string {
+	if (!iso) {
+		return EMPTY;
+	}
+	const [, month, day] = iso.split("-");
+	const index = Number.parseInt(month ?? "", 10) - 1;
+	const name = MONTHS[index];
+	if (!(name && day)) {
+		return iso;
+	}
+	return `${Number.parseInt(day, 10)} ${name}`;
+}

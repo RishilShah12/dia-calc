@@ -1,3 +1,4 @@
+import type { ListName } from "@dia-calc/calc/rap";
 import { formatBracket } from "@dia-calc/calc/rap-calc";
 import { listLabel, RAP_LISTS } from "@dia-calc/calc/shapes";
 import { Column, Host } from "@expo/ui/jetpack-compose";
@@ -19,7 +20,6 @@ import {
 import { ProfileSheet } from "@/components/calc-profile";
 import { ACCENT } from "@/components/calc-theme";
 import {
-	type ListName,
 	PriceCaption,
 	PriceTable,
 	PriceTablePlaceholder,

@@ -2,7 +2,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useColorScheme } from "react-native";
 
-import { EMPTY } from "@/components/calc-base";
 import { paletteFor, type Scheme } from "@/components/calc-theme";
 import { authClient } from "@/lib/auth-client";
 import { setProfileOpen, useProfileOpen } from "@/lib/profile-sheet";
@@ -17,35 +16,6 @@ import { orpc, queryClient } from "@/utils/orpc";
  */
 
 const HOUR = 60 * 60 * 1000;
-
-const MONTHS = [
-	"JAN",
-	"FEB",
-	"MAR",
-	"APR",
-	"MAY",
-	"JUN",
-	"JUL",
-	"AUG",
-	"SEP",
-	"OCT",
-	"NOV",
-	"DEC",
-];
-
-/** `2026-08-07` → `7 AUG`. Short and near-constant width, unlike the ISO form. */
-export function formatRapDate(iso: string | undefined): string {
-	if (!iso) {
-		return EMPTY;
-	}
-	const [, month, day] = iso.split("-");
-	const index = Number.parseInt(month ?? "", 10) - 1;
-	const name = MONTHS[index];
-	if (!(name && day)) {
-		return iso;
-	}
-	return `${Number.parseInt(day, 10)} ${name}`;
-}
 
 export function useProfileSheet() {
 	const scheme: Scheme = useColorScheme() === "dark" ? "dark" : "light";

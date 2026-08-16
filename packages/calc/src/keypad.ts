@@ -1,5 +1,18 @@
 export type KeypadTarget = "carat" | "discount" | "net" | "rough" | "total";
 
+export const DIGIT_ROWS = [
+	["7", "8", "9"],
+	["4", "5", "6"],
+	["1", "2", "3"],
+] as const;
+
+/** Abbreviated hard: three segments share half the keypad's width. */
+export const KEYPAD_TARGETS: { title: string; value: KeypadTarget }[] = [
+	{ title: "CT", value: "carat" },
+	{ title: "$/CT", value: "net" },
+	{ title: "TOTAL", value: "total" },
+];
+
 const MAX_DECIMALS: Record<KeypadTarget, number> = {
 	carat: 2,
 	discount: 2,

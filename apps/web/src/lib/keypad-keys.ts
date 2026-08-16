@@ -9,7 +9,6 @@ export interface KeypadActions {
 	clear: () => void;
 	digit: (digit: string) => void;
 	dot: () => void;
-	sign: () => void;
 }
 
 const isEditableTarget = (target: EventTarget | null) =>
@@ -39,11 +38,6 @@ export function dispatchPhysicalKey(
 			return true;
 		case "Escape":
 			actions.clear();
-			return true;
-		case "-":
-		case "+":
-		case "_":
-			actions.sign();
 			return true;
 		default:
 			if (event.key.toLowerCase() === "c") {
