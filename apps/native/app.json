@@ -8,7 +8,20 @@
     },
     "name": "dia-calc",
     "slug": "dia-calc",
-    "plugins": ["expo-font", "expo-apple-authentication"],
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/nunito/400Regular/Nunito_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/nunito/500Medium/Nunito_500Medium.ttf",
+            "./node_modules/@expo-google-fonts/nunito/600SemiBold/Nunito_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/nunito/700Bold/Nunito_700Bold.ttf"
+          ]
+        }
+      ],
+      "expo-apple-authentication"
+    ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
@@ -16,6 +29,15 @@
     "ios": {
       "bundleIdentifier": "com.rishilshah.dia-calc",
       "usesAppleSignIn": true
+    },
+    "android": {
+      "package": "com.rishilshah.diacalc",
+      "adaptiveIcon": {
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
     }
   }
 }

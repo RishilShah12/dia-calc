@@ -1,25 +1,14 @@
+import { Column, Host, Row, Spacer, Text } from "@expo/ui/jetpack-compose";
 import {
-	Divider,
-	// Not the universal `Host` from `@expo/ui`: same component on iOS, but its
-	// types drop `ignoreSafeArea: 'container'`.
-	Host,
-	HStack,
-	Spacer,
-	Text,
-	VStack,
-} from "@expo/ui/swift-ui";
-import {
-	Animation,
-	animation,
-	contentTransition,
-	foregroundStyle,
-	frame,
-	monospacedDigit,
-	onTapGesture,
+	clickable,
+	fillMaxSize,
+	fillMaxWidth,
 	padding,
-} from "@expo/ui/swift-ui/modifiers";
+	weight,
+} from "@expo/ui/jetpack-compose/modifiers";
 import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import {
 	BLOCK_GAP,
 	CARD_PADDING,
@@ -27,31 +16,32 @@ import {
 	s,
 } from "@/components/calc-base";
 import {
+	CalcCard,
 	Caption,
 	Caret,
+	ComposeWheel,
 	DiscountSlider,
-	FILL,
-	GLASS_CARD,
 	Key,
 	Keypad,
 	Metric,
+	Rule,
 	rounded,
 	Subtext,
-	Wheel,
-} from "@/components/calc-kit";
+} from "@/components/calc-kit-compose";
 import { ProfileSheet } from "@/components/calc-profile";
 import { ACCENT } from "@/components/calc-theme";
 import { usePolishCalc } from "@/hooks/use-polish-calc";
 
 /**
- * The polish screen's SwiftUI tree. Everything it draws comes from
- * `usePolishCalc`, which the Android screen renders from too — what stays here
- * is only how iOS says it.
+ * The polish screen in Jetpack Compose. Everything it draws comes from
+ * `usePolishCalc`, the same hook the SwiftUI screen renders from — what stays
+ * here is only how Android says it.
  */
 
 /** Named because the caret beside each has to be cut to the same size. */
 const CARAT_VALUE = 38;
 const TOTAL_VALUE = 30;
+const GRADES_PAD_V = s(12);
 
 export function Calculator() {
 	const calc = usePolishCalc();
@@ -60,168 +50,155 @@ export function Calculator() {
 
 	const { palette, readout, target } = calc;
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
+	const wheelHeight = s(110);
 	const wheelLabel = (text: string) => (calc.guides ? text : null);
 
 	return (
-		/* Only the bottom inset is ours: the navigator's header owns the top one,
-		   and adding it here again is a double gap. */
 		<Host
 			colorScheme={calc.scheme}
-			ignoreSafeArea="container"
 			seedColor={ACCENT}
 			style={{ backgroundColor: palette.background, flex: 1 }}
 		>
-			{/* The fill frame is what makes the screen edge to edge: without it the
-			    column hugs its content and the host pins it to the top. */}
-			<VStack
+			{/* Only the bottom inset is ours: the navigator's header owns the top
+			    one, and adding it here again is a double gap. */}
+			<Column
 				modifiers={[
-					padding({
-						bottom: insets.bottom + BLOCK_GAP,
-						horizontal: SCREEN_PADDING,
-						top: BLOCK_GAP,
-					}),
-					frame({ maxHeight: FILL, maxWidth: FILL }),
+					fillMaxSize(),
+					padding(
+						SCREEN_PADDING,
+						BLOCK_GAP,
+						SCREEN_PADDING,
+						insets.bottom + BLOCK_GAP
+					),
 				]}
-				spacing={BLOCK_GAP}
+				verticalArrangement={{ spacedBy: BLOCK_GAP }}
 			>
 				<ProfileSheet />
 
-				<VStack
-					alignment="leading"
-					modifiers={[
-						padding({ all: CARD_PADDING }),
-						frame({ maxHeight: FILL, maxWidth: FILL }),
-						GLASS_CARD,
-					]}
+				<CalcCard
+					pad={CARD_PADDING}
+					palette={palette}
+					scheme={calc.scheme}
 					spacing={s(10)}
 				>
-					<HStack alignment="top">
-						<VStack
-							alignment="leading"
-							modifiers={[onTapGesture(calc.selectCarat)]}
-							spacing={2}
+					<Row modifiers={[fillMaxWidth()]}>
+						<Column
+							modifiers={[clickable(calc.selectCarat)]}
+							verticalArrangement={{ spacedBy: 2 }}
 						>
 							<Caption color={target === "carat" ? ACCENT : palette.label}>
 								CARAT
 							</Caption>
-							<HStack alignment="bottom" spacing={2}>
+							<Row
+								horizontalArrangement={{ spacedBy: 2 }}
+								verticalAlignment="bottom"
+							>
 								<Text
-									modifiers={[
-										rounded(CARAT_VALUE, "bold"),
-										foregroundStyle(palette.primary),
-										monospacedDigit(),
-										contentTransition("numericText"),
-										animation(
-											Animation.default,
-											Number.parseFloat(readout.caratText) || 0
-										),
-									]}
+									color={palette.primary}
+									style={rounded(CARAT_VALUE, "bold")}
 								>
 									{readout.caratText}
 								</Text>
 								<Caret on={target === "carat"} size={CARAT_VALUE} />
-							</HStack>
+							</Row>
 							<Subtext color={palette.subtext}>{readout.caratWas}</Subtext>
-						</VStack>
-						<Spacer />
-						<VStack
-							alignment="trailing"
-							modifiers={[onTapGesture(calc.selectTotal)]}
-							spacing={2}
+						</Column>
+						<Spacer modifiers={[weight(1)]} />
+						<Column
+							horizontalAlignment="end"
+							modifiers={[clickable(calc.selectTotal)]}
+							verticalArrangement={{ spacedBy: 2 }}
 						>
 							<Caption color={target === "total" ? ACCENT : palette.label}>
 								TOTAL
 							</Caption>
-							<HStack alignment="bottom" spacing={2}>
-								<Text
-									modifiers={[
-										rounded(TOTAL_VALUE, "bold"),
-										foregroundStyle(ACCENT),
-										monospacedDigit(),
-										contentTransition("numericText"),
-										animation(Animation.default, readout.total),
-									]}
-								>
+							<Row
+								horizontalArrangement={{ spacedBy: 2 }}
+								verticalAlignment="bottom"
+							>
+								<Text color={ACCENT} style={rounded(TOTAL_VALUE, "bold")}>
 									{readout.totalText}
 								</Text>
 								<Caret on={target === "total"} size={TOTAL_VALUE} />
-							</HStack>
+							</Row>
 							<Subtext color={palette.subtext}>{readout.totalWas}</Subtext>
-						</VStack>
-					</HStack>
+						</Column>
+					</Row>
 
-					<Divider />
+					<Rule palette={palette} />
 
-					<HStack>
+					<Row
+						horizontalArrangement="spaceBetween"
+						modifiers={[fillMaxWidth()]}
+					>
 						<Metric
-							animatedOn={readout.total}
 							color={palette.primary}
 							label="RAP LIST"
 							palette={palette}
 							subtext={readout.listWas}
 							value={readout.listText}
 						/>
-						<Spacer />
 						<Metric
 							active={target === "net"}
-							animatedOn={readout.netPerCarat}
 							color={ACCENT}
 							label="PRICE / CT"
-							onTap={calc.selectNet}
+							onPress={calc.selectNet}
 							palette={palette}
 							subtext={readout.netWas}
 							value={readout.netText}
 						/>
-						<Spacer />
 						<Metric
-							animatedOn={readout.backPct}
 							color={palette.primary}
 							label="DISCOUNT"
 							palette={palette}
 							subtext={readout.backWas}
 							value={readout.backText}
 						/>
-					</HStack>
-				</VStack>
+					</Row>
+				</CalcCard>
 
-				{/* Grades and discount are one decision about one stone, so they
-				    are one card — a divider separates them, not a gap. */}
-				<VStack
-					modifiers={[
-						padding({ vertical: s(12) }),
-						frame({ maxHeight: FILL, maxWidth: FILL }),
-						GLASS_CARD,
-					]}
+				{/* Grades and discount are one decision about one stone, so they are
+				    one card — a rule separates them, not a gap. */}
+				<CalcCard
+					padV={GRADES_PAD_V}
+					palette={palette}
+					scheme={calc.scheme}
 					spacing={s(8)}
 				>
-					<HStack spacing={0}>
-						<Wheel
+					<Row modifiers={[fillMaxWidth()]}>
+						<ComposeWheel
+							height={wheelHeight}
 							label={wheelLabel("SHAPE")}
 							labelColor={calc.captionColor}
 							onChange={calc.onShape}
 							options={calc.shapeOptions}
+							palette={palette}
 							selection={calc.shapeName}
 							width={wheelWidth}
 						/>
-						<Wheel
+						<ComposeWheel
+							height={wheelHeight}
 							label={wheelLabel("COLOR")}
 							labelColor={calc.captionColor}
 							onChange={calc.onColor}
 							options={calc.colorOptions}
+							palette={palette}
 							selection={calc.color}
 							width={wheelWidth}
 						/>
-						<Wheel
+						<ComposeWheel
+							height={wheelHeight}
 							label={wheelLabel("CLARITY")}
 							labelColor={calc.captionColor}
 							onChange={calc.onClarity}
 							options={calc.clarityOptions}
+							palette={palette}
 							selection={calc.clarity}
 							width={wheelWidth}
 						/>
-					</HStack>
+					</Row>
 
-					<Divider />
+					<Rule palette={palette} />
 
 					<DiscountSlider
 						captionColor={calc.captionColor}
@@ -230,16 +207,11 @@ export function Calculator() {
 						palette={palette}
 						value={calc.sliderValue}
 					/>
-				</VStack>
+				</CalcCard>
 
 				<Keypad
 					actionKey={
-						<Key
-							active={calc.recut}
-							label="RECUT"
-							onPress={calc.toggleRecut}
-							palette={palette}
-						/>
+						<Key active={calc.recut} label="RECUT" onPress={calc.toggleRecut} />
 					}
 					onBackspace={calc.handleBackspace}
 					onClear={calc.handleClear}
@@ -249,7 +221,7 @@ export function Calculator() {
 					palette={palette}
 					target={target}
 				/>
-			</VStack>
+			</Column>
 		</Host>
 	);
 }

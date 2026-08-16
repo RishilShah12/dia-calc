@@ -156,6 +156,42 @@ export function quote(
 	return { backPct, listPerCarat, netPerCarat, total: netPerCarat * carat };
 }
 
+/**
+ * A typed total is a per-carat price the dealer hasn't divided yet, which is
+ * all it takes for `quote` to derive the discount off it. No weight yet means
+ * no price yet — never a division by zero.
+ */
+export const perCaratFromTotal = (total: number, carat: number) =>
+	carat > 0 ? total / carat : 0;
+
+/**
+ * Which side of the pair the dealer last typed is the side that is authoritative;
+ * `quote` derives the other. A total is fed in as the per-carat price it implies,
+ * so all three edit targets end up in the same two-field solve.
+ */
+export function pricedBy(
+	input: {
+		backText: string;
+		lastEdited: string;
+		netText: string;
+		totalText: string;
+	},
+	carat: number
+): { backPct: number } | { netPerCarat: number } {
+	if (input.lastEdited === "back") {
+		return { backPct: Number.parseFloat(input.backText) || 0 };
+	}
+	if (input.lastEdited === "total") {
+		return {
+			netPerCarat: perCaratFromTotal(
+				Number.parseFloat(input.totalText) || 0,
+				carat
+			),
+		};
+	}
+	return { netPerCarat: Number.parseFloat(input.netText) || 0 };
+}
+
 export interface Comparison {
 	/** After minus before, in dollars. Negative means the recut loses money. */
 	delta: number;

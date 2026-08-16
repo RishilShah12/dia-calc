@@ -7,6 +7,8 @@ import {
 	lookupPrice,
 	netFromBack,
 	type PriceGrid,
+	perCaratFromTotal,
+	pricedBy,
 	quote,
 	summarizeRough,
 } from "./rap-calc.ts";
@@ -164,4 +166,38 @@ test("parts against an unweighed rough report 0/ct, never Infinity", () => {
 	assert.equal(summary.partsCarat, 6.7);
 	assert.equal(summary.perCarat, 0);
 	assert.equal(summary.yieldPct, 0);
+});
+
+test("pricedBy routes each edit target into the same two-field solve", () => {
+	const fields = {
+		backText: "-25",
+		netText: "4050",
+		totalText: "8100",
+	};
+
+	// The typed field is authoritative; the other side is derived by `quote`.
+	assert.deepEqual(pricedBy({ ...fields, lastEdited: "back" }, 2), {
+		backPct: -25,
+	});
+	assert.deepEqual(pricedBy({ ...fields, lastEdited: "net" }, 2), {
+		netPerCarat: 4050,
+	});
+	// A typed total is a per-carat price the dealer hasn't divided yet.
+	assert.deepEqual(pricedBy({ ...fields, lastEdited: "total" }, 2), {
+		netPerCarat: 4050,
+	});
+
+	// Half-typed and empty buffers price at zero rather than NaN.
+	assert.deepEqual(
+		pricedBy({ ...fields, backText: "-", lastEdited: "back" }, 2),
+		{
+			backPct: 0,
+		}
+	);
+	// No weight yet means no price yet — never a division by zero.
+	assert.deepEqual(pricedBy({ ...fields, lastEdited: "total" }, 0), {
+		netPerCarat: 0,
+	});
+	assert.equal(perCaratFromTotal(8100, 0), 0);
+	assert.equal(perCaratFromTotal(8100, 2), 4050);
 });

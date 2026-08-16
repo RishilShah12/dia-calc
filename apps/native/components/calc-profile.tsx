@@ -28,13 +28,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useColorScheme, useWindowDimensions } from "react-native";
 
-import {
-	EMPTY,
-	FILL,
-	RoundGlassButton,
-	rounded,
-	SCREEN_PADDING,
-} from "@/components/calc-kit";
+import { EMPTY, SCREEN_PADDING } from "@/components/calc-base";
+import { FILL, RoundGlassButton, rounded } from "@/components/calc-kit";
 import { ACCENT, paletteFor } from "@/components/calc-theme";
 import { authClient } from "@/lib/auth-client";
 import { setProfileOpen, useProfileOpen } from "@/lib/profile-sheet";

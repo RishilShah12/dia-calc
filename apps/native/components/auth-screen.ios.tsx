@@ -32,10 +32,8 @@ import {
 	AppleAuthenticationScope,
 	signInAsync,
 } from "expo-apple-authentication";
-import { router } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { useColorScheme, useWindowDimensions } from "react-native";
-import { z } from "zod";
 
 import {
 	ACCENT,
@@ -44,8 +42,8 @@ import {
 	paletteFor,
 	supportsLiquidGlass,
 } from "@/components/calc-theme";
+import { type AuthMode, firstIssue, useAuthForm } from "@/hooks/use-auth-form";
 import { authClient } from "@/lib/auth-client";
-import { queryClient } from "@/utils/orpc";
 
 /**
  * One screen serving both sign-in and sign-up — they differ only by a name
@@ -59,7 +57,7 @@ import { queryClient } from "@/utils/orpc";
  * thread without a React render.
  */
 
-export type AuthMode = "sign-in" | "sign-up";
+export type { AuthMode } from "@/hooks/use-auth-form";
 
 const FIELD_H = 52;
 
@@ -89,22 +87,6 @@ const fieldChrome = (width: number) => [
 	frame({ height: FIELD_H, width }),
 	glassEffect({ cornerRadius: 16, shape: "roundedRectangle" }),
 ];
-
-const credentials = z.object({
-	email: z.email("Enter a valid email address"),
-	name: z.string(),
-	password: z.string().min(8, "Use at least 8 characters"),
-});
-
-const firstIssue = (error: unknown): string => {
-	if (error instanceof z.ZodError) {
-		return error.issues[0]?.message ?? "Check the details and try again";
-	}
-	if (error instanceof Error) {
-		return error.message;
-	}
-	return "Something went wrong. Try again.";
-};
 
 /**
  * Placeholder for the light-refraction artwork, in the colours the final asset
@@ -169,8 +151,6 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 	const halfWidth = (contentWidth - ROW_GAP) / 2 - BUTTON_INSET * 2;
 	const chrome = fieldChrome(contentWidth);
 
-	const isSignUp = mode === "sign-up";
-
 	// `useNativeState` keeps each keystroke on the UI thread, so the field
 	// updates without a React render. The refs mirror it for submit, which is
 	// the only moment JS needs the value.
@@ -181,8 +161,16 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 	const password = useRef("");
 	const name = useRef("");
 
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const form = useAuthForm(mode);
+	const {
+		busy,
+		error,
+		isSignUp,
+		setBusy,
+		setError,
+		settle,
+		submit: run,
+	} = form;
 
 	const onEmail = useCallback((text: string) => {
 		email.current = text;
@@ -194,55 +182,13 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 		name.current = text;
 	}, []);
 
-	/** Every path lands here on success, or the calculator query stays stale. */
-	const settle = useCallback(() => {
-		setBusy(false);
-		queryClient.refetchQueries();
-	}, []);
-
-	const submit = useCallback(async () => {
-		setError(null);
-		setBusy(true);
-		try {
-			const values = credentials.parse({
-				email: email.current.trim(),
-				name: isSignUp ? name.current.trim() : "—",
-				password: password.current,
-			});
-			const { error: authError } = isSignUp
-				? await authClient.signUp.email({
-						email: values.email,
-						name: values.name,
-						password: values.password,
-					})
-				: await authClient.signIn.email({
-						email: values.email,
-						password: values.password,
-					});
-			if (authError) {
-				throw new Error(authError.message ?? "Could not sign you in");
-			}
-			settle();
-		} catch (caught) {
-			setError(firstIssue(caught));
-			setBusy(false);
-		}
-	}, [isSignUp, settle]);
-
-	const withGoogle = useCallback(async () => {
-		setError(null);
-		setBusy(true);
-		try {
-			await authClient.signIn.social({
-				callbackURL: "dia-calc://",
-				provider: "google",
-			});
-			settle();
-		} catch (caught) {
-			setError(firstIssue(caught));
-			setBusy(false);
-		}
-	}, [settle]);
+	const submit = useCallback(() => {
+		run({
+			email: email.current,
+			name: name.current,
+			password: password.current,
+		});
+	}, [run]);
 
 	const withApple = useCallback(async () => {
 		setError(null);
@@ -271,7 +217,9 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 			setError(cancelled ? null : firstIssue(caught));
 			setBusy(false);
 		}
-	}, [settle]);
+		// The setters come from `useAuthForm` now, so they have to be declared —
+		// they are `useState` setters underneath and so are stable.
+	}, [settle, setBusy, setError]);
 
 	const submitLabel = isSignUp ? "Create account" : "Sign in";
 	const submitTitle = busy ? "…" : submitLabel;
@@ -281,10 +229,6 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 	const subtitle = isSignUp
 		? "Create an account to price stones"
 		: "Rapaport pricing, in your pocket";
-
-	const swap = useCallback(() => {
-		router.replace(isSignUp ? "/sign-in" : "/sign-up");
-	}, [isSignUp]);
 
 	return (
 		<Host
@@ -378,7 +322,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 							/>
 							<SocialButton
 								label="Google"
-								onPress={withGoogle}
+								onPress={form.withGoogle}
 								palette={palette}
 								symbol="g.circle.fill"
 								width={halfWidth}
@@ -386,7 +330,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 						</HStack>
 					</VStack>
 
-					<Button modifiers={[buttonStyle("plain")]} onPress={swap}>
+					<Button modifiers={[buttonStyle("plain")]} onPress={form.swap}>
 						<Text
 							modifiers={[
 								rounded(14),

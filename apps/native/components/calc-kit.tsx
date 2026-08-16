@@ -33,8 +33,27 @@ import {
 	tint,
 } from "@expo/ui/swift-ui/modifiers";
 import { useCallback, useEffect, useState } from "react";
-import { Dimensions } from "react-native";
 
+import {
+	CAPTION_SPACE,
+	CARD_RADIUS,
+	CARET_DESCENDER,
+	CARET_HEIGHT,
+	CARET_WIDTH,
+	DIGIT_ROWS,
+	HEADER_GLYPH,
+	KEY_GAP,
+	KEY_MIN_HEIGHT,
+	KEY_TINT,
+	KEYPAD_H,
+	KEYPAD_TARGETS,
+	MAX_BACK,
+	METRIC_VALUE,
+	MIN_BACK,
+	SUBTEXT_H,
+	s,
+	WHEEL_HEIGHT,
+} from "@/components/calc-base";
 import {
 	ACCENT,
 	type CalcPalette,
@@ -57,71 +76,11 @@ import {
  * without `moduleSuffixes`.
  */
 
-/**
- * Every size below is authored for a 6.3" iPhone and multiplied by `SCALE`, so
- * the whole layout keeps its proportions down to an SE instead of overflowing.
- * Read once at module load: the app is portrait-locked, so this never changes.
- */
-const REFERENCE_HEIGHT = 874;
-const SCALE = Math.min(1, Dimensions.get("window").height / REFERENCE_HEIGHT);
-export const s = (size: number) => Math.round(size * SCALE);
-
-export const SCREEN_PADDING = 16;
-export const BLOCK_GAP = s(8);
-
-/** Square, so a circular glass button wraps a square glyph rather than an oval. */
-const HEADER_GLYPH = s(22);
-export const WHEEL_HEIGHT = s(110);
-/**
- * A caption line plus the `Wheel`'s own 4pt spacing. Handed back to the picker
- * when guides are off, so dropping the label buys wheel height rather than
- * leaving a hole where the label used to be.
- */
-const CAPTION_SPACE = s(19);
-/** What a key row actually measures: the keypad never takes spare height. */
-const KEY_MIN_HEIGHT = s(52);
-const KEY_GAP = s(10);
-/**
- * Four key rows and the three gaps between them, reserved rather than left to
- * the layout to negotiate. The cards above are greedy, and on a screen with
- * more blocks than slack they win that negotiation and squeeze the bottom row
- * of keys off the screen — which is exactly what the rough screen does.
- */
-const KEYPAD_H = KEY_MIN_HEIGHT * 4 + KEY_GAP * 3;
-/**
- * Reserved whether or not a subtext is showing. Sized to be read rather than
- * merely noticed: in recut mode the "was …" lines are the whole point of the
- * comparison, and against numerals three times their size they lose.
- *
- * Moves with `Subtext`'s font — a 15pt rounded face needs ~18pt of line, and a
- * fixed frame shorter than its content clips rather than grows.
- */
-const SUBTEXT_H = s(20);
-export const CARD_PADDING = s(18);
-/** Named because the caret beside it has to be cut to the same size. */
-const METRIC_VALUE = 20;
-/**
- * The caret, as a share of the numeral it marks. Roughly the cap height of SF
- * Rounded, so the bar stands exactly as tall as the digits beside it.
- */
-const CARET_HEIGHT = 0.72;
-const CARET_WIDTH = 3;
-/** SF's descender, which the text's box includes and a bare capsule does not. */
-const CARET_DESCENDER = 0.21;
-
-/** Keys read as a dark slab in both appearances, as in the design. */
-const KEY_TINT = "#3A3735";
 /** SwiftUI's `.infinity` has no JSON form; this is large enough to fill. */
 export const FILL = 10_000;
 
-/** The slider covers list price down to zero in 1% steps — 100 of them. */
-export const MIN_BACK = -100;
-export const MAX_BACK = 0;
-
-export const EMPTY = "—";
-
 export const GLASS_CARD = glassEffect({
-	cornerRadius: 28,
+	cornerRadius: CARD_RADIUS,
 	glass: { interactive: false, variant: "regular" },
 	shape: "roundedRectangle",
 });
@@ -138,55 +97,6 @@ export const keyStyle = buttonStyle(supportsLiquidGlass ? "glass" : "bordered");
 const primaryKeyStyle = buttonStyle(
 	supportsLiquidGlass ? "glassProminent" : "borderedProminent"
 );
-
-const DIGIT_ROWS = [
-	["7", "8", "9"],
-	["4", "5", "6"],
-	["1", "2", "3"],
-] as const;
-
-/** Abbreviated hard: three segments share half the keypad's width. */
-const KEYPAD_TARGETS: { title: string; value: KeypadTarget }[] = [
-	{ title: "CT", value: "carat" },
-	{ title: "$/CT", value: "net" },
-	{ title: "TOTAL", value: "total" },
-];
-
-/**
- * A typed total is a per-carat price the dealer hasn't divided yet, which is
- * all it takes for `quote` to derive the discount off it. No weight yet means
- * no price yet — never a division by zero.
- */
-export const perCaratFromTotal = (total: number, carat: number) =>
-	carat > 0 ? total / carat : 0;
-
-/**
- * Which side of the pair the dealer last typed is the side that is authoritative;
- * `quote` derives the other. A total is fed in as the per-carat price it implies,
- * so all three edit targets end up in the same two-field solve.
- */
-export function pricedBy(
-	input: {
-		backText: string;
-		lastEdited: string;
-		netText: string;
-		totalText: string;
-	},
-	carat: number
-): { backPct: number } | { netPerCarat: number } {
-	if (input.lastEdited === "back") {
-		return { backPct: Number.parseFloat(input.backText) || 0 };
-	}
-	if (input.lastEdited === "total") {
-		return {
-			netPerCarat: perCaratFromTotal(
-				Number.parseFloat(input.totalText) || 0,
-				carat
-			),
-		};
-	}
-	return { netPerCarat: Number.parseFloat(input.netText) || 0 };
-}
 
 export function Caption({
 	children,

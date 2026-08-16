@@ -7,7 +7,7 @@ import {
 import { SymbolView } from "expo-symbols";
 import { StyleSheet, Switch, Text, useColorScheme, View } from "react-native";
 
-import { ACCENT, paletteFor } from "@/components/calc-theme";
+import { ACCENT, ON_ACCENT, paletteFor } from "@/components/calc-theme";
 import { toggleGuides, useGuides } from "@/lib/guides";
 
 /**
@@ -19,6 +19,17 @@ import { toggleGuides, useGuides } from "@/lib/guides";
  */
 const useCalcPalette = () =>
 	paletteFor(useColorScheme() === "dark" ? "dark" : "light");
+
+/**
+ * `SymbolView` draws SF Symbols on iOS and Material Symbols on Android, but
+ * only when it is handed the object form — a bare string resolves to `null` on
+ * Android and renders the fallback, which is why these read as blank until the
+ * `android` half is supplied. Hoisted so the objects are not rebuilt per render.
+ */
+const GUIDES_ICON = { android: "visibility", ios: "eye" } as const;
+const POLISH_ICON = { android: "diamond", ios: "diamond" } as const;
+const ROUGH_ICON = { android: "deployed_code", ios: "cube" } as const;
+const RAP_ICON = { android: "table_chart", ios: "tablecells" } as const;
 
 /**
  * Cut to react-navigation's own `DrawerItem` so this row lines up with the
@@ -52,13 +63,20 @@ function DrawerContent(props: DrawerContentComponentProps) {
 			    "Guides off" had to say the state and the action in one line. */}
 			<View style={styles.row}>
 				<View style={styles.icon}>
-					<SymbolView name="eye" size={22} tintColor={palette.primary} />
+					<SymbolView
+						name={GUIDES_ICON}
+						size={22}
+						tintColor={palette.primary}
+					/>
 				</View>
 				<Text style={[styles.label, { color: palette.primary }]}>Guides</Text>
+				{/* Android draws the thumb from the Material scheme unless it is told
+				    otherwise, which lands a teal knob on an amber track. */}
 				<Switch
 					accessibilityLabel="Guides"
 					onValueChange={toggleGuides}
-					trackColor={{ true: ACCENT }}
+					thumbColor={guides ? ON_ACCENT : palette.surface}
+					trackColor={{ false: palette.hairline, true: ACCENT }}
 					value={guides}
 				/>
 			</View>
@@ -89,7 +107,7 @@ function DrawerLayout() {
 				name="(polish)"
 				options={{
 					drawerIcon: ({ size, color }) => (
-						<SymbolView name="diamond" size={size} tintColor={color} />
+						<SymbolView name={POLISH_ICON} size={size} tintColor={color} />
 					),
 					drawerLabel: "Polish",
 				}}
@@ -98,7 +116,7 @@ function DrawerLayout() {
 				name="(rough)"
 				options={{
 					drawerIcon: ({ size, color }) => (
-						<SymbolView name="cube" size={size} tintColor={color} />
+						<SymbolView name={ROUGH_ICON} size={size} tintColor={color} />
 					),
 					drawerLabel: "Rough",
 				}}
@@ -107,7 +125,7 @@ function DrawerLayout() {
 				name="(rap)"
 				options={{
 					drawerIcon: ({ size, color }) => (
-						<SymbolView name="tablecells" size={size} tintColor={color} />
+						<SymbolView name={RAP_ICON} size={size} tintColor={color} />
 					),
 					drawerLabel: "Rap List",
 				}}

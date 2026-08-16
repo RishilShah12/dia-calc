@@ -1,7 +1,7 @@
 import { formatBracket } from "@dia-calc/calc/rap-calc";
 import { listLabel, RAP_LISTS } from "@dia-calc/calc/shapes";
-import { Host, Picker, Text as SwiftText, VStack } from "@expo/ui/swift-ui";
-import { frame, padding, pickerStyle, tag } from "@expo/ui/swift-ui/modifiers";
+import { Column, Host } from "@expo/ui/jetpack-compose";
+import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,10 +11,15 @@ import {
 	SCREEN_PADDING,
 	s,
 } from "@/components/calc-base";
-import { FILL, GLASS_CARD, rounded, Wheel } from "@/components/calc-kit";
+import {
+	CalcCard,
+	ComposeWheel,
+	SegmentedRow,
+} from "@/components/calc-kit-compose";
 import { ProfileSheet } from "@/components/calc-profile";
 import { ACCENT } from "@/components/calc-theme";
 import {
+	type ListName,
 	PriceCaption,
 	PriceTable,
 	PriceTablePlaceholder,
@@ -22,18 +27,18 @@ import {
 } from "@/components/rap-price-table";
 
 /**
- * The price list itself, rather than the one cell of it a graded stone lands
- * on. A dealer quoting over the phone reads across a row — "G is 12,200, H is
- * 11,000" — which the calculator cannot answer without re-spinning two wheels.
+ * The Android price list: a Jetpack Compose card of controls over the same
+ * shared React Native table the iOS screen uses.
  *
- * The controls stay SwiftUI, in a self-sizing `Host`: the wheel and the
- * segmented picker are the same native controls the calculators use, and the
- * profile sheet has to sit inside a `Host` to be presented at all. Everything
- * below them is shared React Native — see `rap-price-table`.
+ * The `Host` sizes itself to the card (`matchContents`) rather than filling the
+ * screen, which is what leaves the table below it a real RN box to grow into.
  */
+
+const WHEEL_H = s(84);
 
 const styles = StyleSheet.create({
 	fill: { flex: 1 },
+	host: { marginTop: BLOCK_GAP },
 });
 
 export function RapList() {
@@ -41,6 +46,12 @@ export function RapList() {
 	const insets = useSafeAreaInsets();
 	const { width } = useWindowDimensions();
 	const { palette } = rap;
+
+	const cardWidth = width - SCREEN_PADDING * 2 - CARD_PADDING * 2;
+	const listOptions = RAP_LISTS.map((entry) => ({
+		title: listLabel(entry),
+		value: entry,
+	}));
 
 	return (
 		<View
@@ -53,40 +64,28 @@ export function RapList() {
 				},
 			]}
 		>
-			{/* Which list, and which size in it — the two questions that have to be
-			    answered before a row of prices means anything. */}
 			<Host
 				colorScheme={rap.scheme}
 				matchContents={{ vertical: true }}
 				seedColor={ACCENT}
-				style={{ marginTop: BLOCK_GAP }}
+				style={styles.host}
 			>
-				<VStack spacing={0}>
+				<Column modifiers={[fillMaxWidth()]}>
 					<ProfileSheet />
-					<VStack
-						modifiers={[
-							padding({ all: CARD_PADDING }),
-							frame({ maxWidth: FILL }),
-							GLASS_CARD,
-						]}
-						spacing={s(8)}
+					<CalcCard
+						grow={false}
+						pad={CARD_PADDING}
+						palette={palette}
+						scheme={rap.scheme}
 					>
-						<Picker
-							modifiers={[pickerStyle("segmented"), frame({ maxWidth: FILL })]}
-							onSelectionChange={rap.handleList}
+						<SegmentedRow<ListName>
+							onChange={rap.handleList}
+							options={listOptions}
+							palette={palette}
 							selection={rap.list}
-						>
-							{RAP_LISTS.map((entry) => (
-								<SwiftText
-									key={entry}
-									modifiers={[tag(entry), rounded(13, "semibold")]}
-								>
-									{listLabel(entry)}
-								</SwiftText>
-							))}
-						</Picker>
-						<Wheel
-							height={s(84)}
+						/>
+						<ComposeWheel
+							height={WHEEL_H}
 							label={rap.guides ? "SIZE" : null}
 							labelColor={palette.label}
 							onChange={rap.handleBracket}
@@ -94,11 +93,12 @@ export function RapList() {
 								title: formatBracket(bracket),
 								value: String(index),
 							}))}
+							palette={palette}
 							selection={String(rap.safeIndex)}
-							width={width - SCREEN_PADDING * 2 - CARD_PADDING * 2}
+							width={cardWidth}
 						/>
-					</VStack>
-				</VStack>
+					</CalcCard>
+				</Column>
 			</Host>
 
 			<PriceCaption
