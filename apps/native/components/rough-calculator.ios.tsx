@@ -82,12 +82,17 @@ import { useRoughCalc } from "@/hooks/use-rough-calc";
  */
 
 /**
- * Rough fits four blocks between the header and the keypad where polish fits
- * two, so everything above the keypad is authored tighter. These are the knobs
- * that buy the ~90pt the extra card costs; without them the keypad's bottom row
- * runs off a 6.3" screen.
+ * Rough carries more between the header and the keypad than polish does, so
+ * everything above the keypad is authored tighter. These are the knobs that buy
+ * the height the extra content costs; without them the column overflows, and a
+ * SwiftUI stack that overflows centres what it cannot hold — which clips the
+ * top card under the navigation bar and runs the bottom key row into the home
+ * indicator, both at once and neither of them obviously a height problem.
+ *
+ * ponytail: tuned against a 6.3" phone with only a few points to spare. Adding
+ * anything to this screen means taking it from here first.
  */
-const ROUGH_CARD_PADDING = s(13);
+const ROUGH_CARD_PADDING = s(10);
 const ROUGH_WHEEL_HEIGHT = s(96);
 const ROUGH_VALUE = 30;
 const PART_CARAT = 32;
@@ -405,70 +410,16 @@ export function RoughCalculator() {
 			>
 				<ProfileSheet />
 
-				{/* The bottom line. It is pinned above the part editor because it is
-				    the number every other control on the screen is aimed at. */}
-				<VStack
-					alignment="leading"
-					modifiers={[
-						padding({ all: ROUGH_CARD_PADDING }),
-						frame({ maxWidth: FILL }),
-						GLASS_CARD,
-					]}
-					spacing={s(4)}
-				>
-					<HStack alignment="top">
-						<VStack
-							alignment="leading"
-							modifiers={[onTapGesture(selectRough)]}
-							spacing={2}
-						>
-							<Caption color={target === "rough" ? ACCENT : palette.label}>
-								ROUGH WT
-							</Caption>
-							<HStack alignment="bottom" spacing={2}>
-								<Text
-									modifiers={[
-										rounded(ROUGH_VALUE, "bold"),
-										foregroundStyle(palette.primary),
-										monospacedDigit(),
-										contentTransition("numericText"),
-										animation(Animation.default, roughCarat),
-									]}
-								>
-									{roughText || "0"}
-								</Text>
-								<Caret on={target === "rough"} size={ROUGH_VALUE} />
-							</HStack>
-						</VStack>
-						<Spacer />
-						<VStack alignment="trailing" spacing={2}>
-							<Caption color={palette.label}>TOTAL VALUE</Caption>
-							<Text
-								modifiers={[
-									rounded(ROUGH_VALUE, "bold"),
-									foregroundStyle(ACCENT),
-									monospacedDigit(),
-									contentTransition("numericText"),
-									animation(Animation.default, summary.total),
-								]}
-							>
-								{usd(summary.total)}
-							</Text>
-						</VStack>
-					</HStack>
-					<HStack>
-						<Subtext color={palette.subtext}>
-							{`${summary.partsCarat.toFixed(2)} ct`}
-						</Subtext>
-						<Spacer />
-						<Subtext color={palette.subtext}>
-							{`${usd(summary.perCarat, true)} /ct`}
-						</Subtext>
-					</HStack>
-				</VStack>
+				{/* The bottom line and the part editor, in one card.
 
-				{/* One part at a time: the wheels and the slider below can only ever
-				    address one, so the picker says which. */}
+				    They were two, and the seam cost more than it said: a second card
+				    is its own 13pt of padding on both edges plus the gap between them,
+				    which is ~34pt of nothing on a screen that was already ~41pt over
+				    and clipping at both ends. A divider draws the same separation for
+				    1pt, which is what the grades card below has always done.
+
+				    The total stays pinned at the top: it is the number every other
+				    control on this screen is aimed at. */}
 				<VStack
 					alignment="leading"
 					modifiers={[
@@ -476,8 +427,70 @@ export function RoughCalculator() {
 						frame({ maxHeight: FILL, maxWidth: FILL }),
 						GLASS_CARD,
 					]}
-					spacing={s(5)}
+					spacing={s(4)}
 				>
+					{/* Its own stack, so the two summary lines keep their tighter
+					    spacing inside the shared card. */}
+					<VStack
+						alignment="leading"
+						modifiers={[frame({ maxWidth: FILL })]}
+						spacing={s(4)}
+					>
+						<HStack alignment="top">
+							<VStack
+								alignment="leading"
+								modifiers={[onTapGesture(selectRough)]}
+								spacing={2}
+							>
+								<Caption color={target === "rough" ? ACCENT : palette.label}>
+									ROUGH WT
+								</Caption>
+								<HStack alignment="bottom" spacing={2}>
+									<Text
+										modifiers={[
+											rounded(ROUGH_VALUE, "bold"),
+											foregroundStyle(palette.primary),
+											monospacedDigit(),
+											contentTransition("numericText"),
+											animation(Animation.default, roughCarat),
+										]}
+									>
+										{roughText || "0"}
+									</Text>
+									<Caret on={target === "rough"} size={ROUGH_VALUE} />
+								</HStack>
+							</VStack>
+							<Spacer />
+							<VStack alignment="trailing" spacing={2}>
+								<Caption color={palette.label}>TOTAL VALUE</Caption>
+								<Text
+									modifiers={[
+										rounded(ROUGH_VALUE, "bold"),
+										foregroundStyle(ACCENT),
+										monospacedDigit(),
+										contentTransition("numericText"),
+										animation(Animation.default, summary.total),
+									]}
+								>
+									{usd(summary.total)}
+								</Text>
+							</VStack>
+						</HStack>
+						<HStack>
+							<Subtext color={palette.subtext}>
+								{`${summary.partsCarat.toFixed(2)} ct`}
+							</Subtext>
+							<Spacer />
+							<Subtext color={palette.subtext}>
+								{`${usd(summary.perCarat, true)} /ct`}
+							</Subtext>
+						</HStack>
+					</VStack>
+
+					<Divider />
+
+					{/* One part at a time: the wheels and the slider below can only
+					    ever address one, so the picker says which. */}
 					<HStack spacing={s(10)}>
 						<Picker
 							modifiers={[pickerStyle("segmented"), frame({ maxWidth: FILL })]}
@@ -595,11 +608,11 @@ export function RoughCalculator() {
 				    one card — a divider separates them, not a gap. */}
 				<VStack
 					modifiers={[
-						padding({ vertical: s(8) }),
+						padding({ vertical: s(4) }),
 						frame({ maxHeight: FILL, maxWidth: FILL }),
 						GLASS_CARD,
 					]}
-					spacing={s(5)}
+					spacing={s(4)}
 				>
 					<HStack spacing={0}>
 						<Wheel

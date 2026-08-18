@@ -7,5 +7,9 @@ export const env = createEnv({
 	},
 	clientPrefix: "EXPO_PUBLIC_",
 	emptyStringAsUndefined: true,
-	runtimeEnv: process.env,
+	// Metro only inlines EXPO_PUBLIC_* when accessed as process.env.EXPO_PUBLIC_* —
+	// passing the whole process.env object leaves an empty object in Hermes release builds.
+	runtimeEnv: {
+		EXPO_PUBLIC_SERVER_URL: process.env.EXPO_PUBLIC_SERVER_URL,
+	},
 });

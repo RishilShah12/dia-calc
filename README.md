@@ -82,12 +82,43 @@ If you want to add app-specific blocks instead of shared primitives, run the sha
 
 ### Cloudflare via Alchemy
 
-- Target: web + server
-- Dev: pnpm run dev
-- Deploy: pnpm run deploy
-- Destroy: pnpm run destroy
+- Target: web + server (D1 + Workers)
+- Local/dev stage: `pnpm run deploy` (uses `.env` files, stage = your username)
+- Production: `pnpm run deploy:prod` (uses `.env.prod` files, stage = `prod`)
+- Destroy: `pnpm run destroy`
+
+**Production env files** (gitignored — copy from `*.env.prod.example`):
+
+| File | Keys |
+|------|------|
+| `packages/infra/.env.prod` | `ALCHEMY_PASSWORD`, `ALCHEMY_STAGE=prod` |
+| `apps/server/.env.prod` | Auth secrets, `BETTER_AUTH_URL`, `CORS_ORIGIN`, RapNet, OAuth |
+| `apps/web/.env.prod` | `NEXT_PUBLIC_SERVER_URL` |
+| `apps/native/.env.prod` | `EXPO_PUBLIC_SERVER_URL` |
+
+After the first prod deploy, Alchemy prints `Server ->` / `Web ->`. Put those URLs into the `.env.prod` files and run `pnpm run deploy:prod` once more so auth/CORS bindings match.
+
+Current prod Workers (after deploy):
+
+- API: `https://dia-calc-server-prod.rishilshah12.workers.dev`
+- Web: `https://dia-calc-web-prod.rishilshah12.workers.dev`
 
 For more details, see the guide on [Deploying to Cloudflare with Alchemy](https://www.better-t-stack.dev/docs/guides/cloudflare-alchemy).
+
+### Android release APK (local)
+
+Points the app at the Cloudflare API via `apps/native/.env.prod`:
+
+```bash
+pnpm native:apk
+```
+
+Output: `apps/native/android/app/build/outputs/apk/release/app-release.apk`  
+(Uses the default debug signing unless you configure a release keystore — fine for sideloading.)
+
+The build script mirrors `.env.prod` → `.env.production` for Expo’s release bundler and forces a JS rebundle so `EXPO_PUBLIC_SERVER_URL` is inlined.
+
+Keep `apps/native/.env` on localhost for day-to-day `pnpm android` / Metro.
 
 ## Git Hooks and Formatting
 
@@ -145,5 +176,8 @@ first.
 - `pnpm run check-types`: Check TypeScript types across all apps
 - `pnpm run dev:native`: Start the React Native/Expo development server
 - `pnpm run db:generate`: Generate database client/types
+- `pnpm run deploy`: Deploy web + server (local Alchemy stage)
+- `pnpm run deploy:prod`: Deploy to Cloudflare stage `prod` (loads `.env.prod`)
+- `pnpm native:apk`: Build a release APK using `apps/native/.env.prod`
 - `pnpm run check`: Run Biome formatting and linting
 - `cd apps/web && pnpm run generate-pwa-assets`: Generate PWA assets

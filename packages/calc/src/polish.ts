@@ -12,6 +12,7 @@ import {
 	backFromNet,
 	compareQuotes,
 	EMPTY,
+	formatBack,
 	lookupPrice,
 	MAX_BACK,
 	MIN_BACK,
@@ -21,7 +22,7 @@ import {
 	quote,
 	usd,
 } from "./rap-calc";
-import { findShape, SHAPES } from "./shapes";
+import { CLARITIES, COLORS, findShape, SHAPES } from "./shapes";
 
 /**
  * The polish calculator's whole state machine, with no view in it.
@@ -97,8 +98,10 @@ export interface WheelOption {
 export function usePolishCalc(grids: PriceGrid[] | undefined) {
 	const [shapeName, setShapeName] = useState("Round");
 	const [caratText, setCaratText] = useState("1.00");
-	const [color, setColor] = useState("g");
-	const [clarity, setClarity] = useState("vs1");
+	// The top of both scales: every list publishes D and IF, so the opening stone
+	// is priced rather than blank, and the wheels open at the row they show.
+	const [color, setColor] = useState("d");
+	const [clarity, setClarity] = useState("if");
 	const [backText, setBackText] = useState("-25");
 	const [netText, setNetText] = useState("");
 	const [totalText, setTotalText] = useState("");
@@ -113,8 +116,8 @@ export function usePolishCalc(grids: PriceGrid[] | undefined) {
 	// original web panel ended up comparing against a grade captured at mount.
 	const [recut, setRecut] = useState(false);
 	const [recutCaratText, setRecutCaratText] = useState("");
-	const [recutColor, setRecutColor] = useState("g");
-	const [recutClarity, setRecutClarity] = useState("vs1");
+	const [recutColor, setRecutColor] = useState("d");
+	const [recutClarity, setRecutClarity] = useState("if");
 	const [recutBackText, setRecutBackText] = useState("-25");
 
 	const shape = findShape(shapeName);
@@ -219,7 +222,9 @@ export function usePolishCalc(grids: PriceGrid[] | undefined) {
 
 	const handleDiscount = useCallback(
 		(next: number) => {
-			const value = String(Math.round(next));
+			// Already on a step: the ruler snaps before it emits, so rounding again
+			// here would throw away the half percents it exists to select.
+			const value = String(next);
 			if (recut) {
 				setRecutBackText(value);
 				return;
@@ -274,9 +279,12 @@ export function usePolishCalc(grids: PriceGrid[] | undefined) {
 
 	return {
 		clarity: recut ? recutClarity : clarity,
-		clarityOptions: (grid?.clarities ?? []).map(gradeOption),
+		// The trade's scales stand in until the list lands: a rotor with no rows
+		// in it reads as a stone with no colour and no clarity, which is what the
+		// screen showed for as long as the price list took to arrive.
+		clarityOptions: (grid?.clarities ?? CLARITIES).map(gradeOption),
 		color: recut ? recutColor : color,
-		colorOptions: (grid?.colors ?? []).map(gradeOption),
+		colorOptions: (grid?.colors ?? COLORS).map(gradeOption),
 		grid,
 		guides,
 		handleBackspace,
@@ -346,7 +354,7 @@ function buildReadout(input: {
 
 	const money = (value: number, hasPrice: boolean) =>
 		grid && hasPrice ? usd(value) : EMPTY;
-	const pct = (value: number) => (grid ? `${value.toFixed(0)}%` : EMPTY);
+	const pct = (value: number) => (grid ? formatBack(value) : EMPTY);
 
 	if (!recut) {
 		// The typed field keeps its raw buffer, so a half-typed "-2" is not

@@ -284,9 +284,47 @@ export const usd = (amount: number, cents = false) =>
 /** Stands in for a number the list does not publish. Never a zero: a zero is a price. */
 export const EMPTY = "—";
 
-/** The discount slider covers list price down to zero in 1% steps — 100 of them. */
+/**
+ * What the discount control covers: worthless at -100, list price at 0, and up
+ * to double list at +100. The premium half is not decoration — scarce goods
+ * genuinely trade over list, which is why `netFromBack` has always priced a
+ * positive back.
+ */
 export const MIN_BACK = -100;
-export const MAX_BACK = 0;
+export const MAX_BACK = 100;
+
+/** How fine the discount control can be dialled: whole percents, or halves. */
+export type BackStep = 1 | 0.5;
+
+/**
+ * The back the control is allowed to emit: inside the range and on a step.
+ *
+ * Rounded to two decimals for the same reason `backFromNet` is — 0.5 steps are
+ * exact in binary but the multiply that produces them is not, and a back of
+ * -25.500000000000004 formats as garbage.
+ */
+export const snapBack = (value: number, step: BackStep) =>
+	Math.round(
+		Math.min(MAX_BACK, Math.max(MIN_BACK, Math.round(value / step) * step)) *
+			100
+	) / 100;
+
+/**
+ * A back, as the trade writes one: `-25%`, and `-25.5%` only when there is half
+ * a percent to say. A flat `toFixed(0)` would round a real -25.5 to -26%, which
+ * is a different price.
+ *
+ * A premium carries its sign. Now that the range runs past zero, a bare `50%`
+ * beside a `-25%` is a discount at a glance and a doubling in fact.
+ *
+ * `step` is what the reading is being dialled by, and on half steps every value
+ * keeps its decimal — `-12.0%`, not `-12%`. Otherwise the number changes width
+ * every second tick and drags the row it sits in along with it.
+ */
+export const formatBack = (value: number, step: BackStep = 1) => {
+	const decimals = step === 1 && Number.isInteger(value) ? 0 : 1;
+	return `${value > 0 ? "+" : ""}${value.toFixed(decimals)}%`;
+};
 
 export const inr = (usdAmount: number, rate: number) =>
 	INR_WHOLE.format(usdAmount * rate);

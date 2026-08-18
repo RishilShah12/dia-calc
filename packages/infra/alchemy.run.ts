@@ -2,9 +2,23 @@ import alchemy from "alchemy";
 import { D1Database, Nextjs, Worker } from "alchemy/cloudflare";
 import { config } from "dotenv";
 
-config({ path: "./.env" });
-config({ path: "../../apps/web/.env" });
-config({ path: "../../apps/server/.env" });
+function isProdStage(): boolean {
+	if (process.env.ALCHEMY_STAGE === "prod" || process.env.STAGE === "prod") {
+		return true;
+	}
+	const stageIdx = process.argv.indexOf("--stage");
+	if (stageIdx !== -1 && process.argv[stageIdx + 1] === "prod") {
+		return true;
+	}
+	return process.argv.includes("prod");
+}
+
+const prod = isProdStage();
+const envSuffix = prod ? ".prod" : "";
+
+config({ path: `./.env${envSuffix}` });
+config({ path: `../../apps/web/.env${envSuffix}` });
+config({ path: `../../apps/server/.env${envSuffix}` });
 
 const app = await alchemy("dia-calc");
 

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "deploy": "alchemy deploy",
+    "deploy:prod": "alchemy deploy --stage prod",
     "destroy": "alchemy destroy",
     "dev": "alchemy dev"
   },

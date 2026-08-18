@@ -40,11 +40,33 @@ const SCALE = Math.min(
 export const s = (size: number) => Math.round(size * SCALE);
 
 export const SCREEN_PADDING = 16;
+/**
+ * The rotor's box on the polish screen, caption included. Wide enough for the
+ * selection and the rows either side of it, and no wider: past that a wheel is
+ * dead space — the shape wheel opens on BR, so the rows above it draw nothing.
+ *
+ * Five rows is what this was, and it did not fit: the column came to 823pt on
+ * an 874pt phone, and a SwiftUI stack that overflows centres what it cannot
+ * hold — so the readout card was cut off under the navigation bar and the
+ * bottom key row ran into the home indicator. The height came out of here
+ * because this is where it was not buying anything.
+ *
+ * A fixed number rather than "whatever is left", which is what it looks like it
+ * should be: the Android rotor is React Native hosted inside Compose, and the
+ * host's box size does not reach the RN layout root — a `flex: 1` in there
+ * measures against nothing and collapses to zero, wheel and all. So the height
+ * is authored and `s()` keeps it proportional on a short screen.
+ *
+ * ponytail: sized so the polish column fits a 6.3" phone with ~30pt to spare.
+ * If a device still clips, this is the number to bring down — but check the
+ * total first, because clipping means the column overflowed, not that the
+ * wheel misbehaved.
+ */
+export const WHEEL_HEIGHT = s(112);
 export const BLOCK_GAP = s(8);
 
 /** Square, so a circular glass button wraps a square glyph rather than an oval. */
 export const HEADER_GLYPH = s(22);
-export const WHEEL_HEIGHT = s(110);
 /**
  * A caption line plus the wheel's own 4pt spacing. Handed back to the picker
  * when guides are off, so dropping the label buys wheel height rather than

@@ -13,12 +13,14 @@
     "db:generate": "turbo run db:generate -F @dia-calc/db",
     "db:studio": "turbo -F @dia-calc/db db:studio",
     "deploy": "turbo run deploy -F @dia-calc/infra",
+    "deploy:prod": "turbo run deploy:prod -F @dia-calc/infra",
     "destroy": "turbo run destroy -F @dia-calc/infra",
     "dev": "turbo run dev",
     "dev:native": "turbo run dev -F native",
     "dev:server": "turbo run dev -F server",
     "dev:web": "turbo run dev -F web",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "native:apk": "pnpm --filter native build:apk"
   },
   "dependencies": {
     "@dia-calc/env": "workspace:*",

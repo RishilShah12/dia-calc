@@ -3,7 +3,7 @@ import {
 	KEYPAD_TARGETS,
 	type KeypadTarget,
 } from "@dia-calc/calc/keypad";
-import { MAX_BACK, MIN_BACK } from "@dia-calc/calc/rap-calc";
+import { formatBack } from "@dia-calc/calc/rap-calc";
 import {
 	Box,
 	Button,
@@ -14,7 +14,6 @@ import {
 	Row,
 	SegmentedButton,
 	SingleChoiceSegmentedButtonRow,
-	Slider,
 	Spacer,
 	Text,
 } from "@expo/ui/jetpack-compose";
@@ -51,7 +50,9 @@ import {
 	roundedFamily,
 	SUBTEXT_H,
 	s,
+	WHEEL_HEIGHT,
 } from "@/components/calc-base";
+import { CalcRuler, RULER_STRIP_H, useBackStep } from "@/components/calc-ruler";
 import { ACCENT, type CalcPalette, ON_ACCENT } from "@/components/calc-theme";
 import { CalcWheel } from "@/components/calc-wheel";
 
@@ -86,6 +87,15 @@ const WEIGHT_VALUE = {
 
 const KEY_RADIUS = s(18);
 const ICON_BUTTON = s(40);
+/**
+ * The well the discount tape runs in. Half the card's radius and a tonal fill,
+ * which is Material's way of saying what Liquid Glass says with a recess: this
+ * strip is inset into the card rather than printed on it.
+ */
+const TROUGH_RADIUS = CARD_RADIUS / 2;
+/** Wider than it is tall: the tape needs the height, the recess needs the width. */
+const TROUGH_PAD_H = s(14);
+const TROUGH_PAD_V = s(10);
 
 /**
  * The glass card's stand-in.
@@ -506,14 +516,12 @@ export function Keypad({
 }
 
 /**
- * Guides off strips the caption and the end labels, which leaves the live
- * reading nowhere to sit but beside the track.
+ * The discount tape, in a tonal trough.
  *
- * `steps={0}`, not 100: a stepped Material slider draws a tick per step, and a
- * hundred of them under the track is noise — the same reason the SwiftUI one
- * has no `step`. `onChange` rounds instead. The colours are named rather than
- * seeded, because a tonal palette derived from the accent does not land back on
- * the accent.
+ * Material's slider is gone from here: a back runs -100 to +100 and is quoted to
+ * the half, which is more precision than any track a phone can hold. `CalcRuler`
+ * has the whole control; Compose supplies the surface it sits on and the box it
+ * sits in, the same division of labour `ComposeWheel` runs on.
  */
 export function DiscountSlider({
 	captionColor,
@@ -528,65 +536,76 @@ export function DiscountSlider({
 	palette: CalcPalette;
 	value: number;
 }) {
-	const reading = (
-		<Text color={ACCENT} style={rounded(17, "bold")}>
-			{`${value.toFixed(0)}%`}
-		</Text>
-	);
-	const track = (
-		<Slider
-			colors={{
-				activeTrackColor: ACCENT,
-				inactiveTrackColor: palette.hairline,
-				thumbColor: ACCENT,
-			}}
-			max={MAX_BACK}
-			min={MIN_BACK}
-			modifiers={[weight(1)]}
-			onValueChange={onChange}
-			steps={0}
-			value={value}
-		/>
-	);
-
-	if (!guides) {
-		return (
-			<Row
-				horizontalArrangement={{ spacedBy: s(10) }}
-				modifiers={[padding(18, 0, 18, 0), fillMaxWidth()]}
-				verticalAlignment="center"
-			>
-				{track}
-				{reading}
-			</Row>
-		);
-	}
+	const { half, step, toggleStep } = useBackStep(value, onChange);
 
 	return (
 		<Column
 			modifiers={[padding(18, 0, 18, 0), fillMaxWidth()]}
-			verticalArrangement={{ spacedBy: 2 }}
+			verticalArrangement={{ spacedBy: s(4) }}
 		>
-			<Row modifiers={[fillMaxWidth()]} verticalAlignment="center">
-				<Caption color={captionColor}>DISCOUNT OFF LIST</Caption>
-				<Spacer modifiers={[weight(1)]} />
-				{reading}
-			</Row>
-			{/* Material's slider has no end-label slots, so they sit around it. */}
 			<Row
-				horizontalArrangement={{ spacedBy: s(6) }}
+				horizontalArrangement={{ spacedBy: s(8) }}
 				modifiers={[fillMaxWidth()]}
 				verticalAlignment="center"
 			>
-				<Text color={palette.subtle} style={rounded(10, "medium")}>
-					-100%
-				</Text>
-				{track}
-				<Text color={palette.subtle} style={rounded(10, "medium")}>
-					0%
+				{guides ? (
+					<Caption color={captionColor}>DISCOUNT OFF LIST</Caption>
+				) : null}
+				<Spacer modifiers={[weight(1)]} />
+				<StepPill half={half} onPress={toggleStep} palette={palette} />
+				<Text color={ACCENT} style={rounded(17, "bold")}>
+					{formatBack(value, step)}
 				</Text>
 			</Row>
+			<Box
+				modifiers={[
+					fillMaxWidth(),
+					heightOf(RULER_STRIP_H + TROUGH_PAD_V * 2),
+					clip(Shapes.RoundedCorner(TROUGH_RADIUS)),
+					background(palette.surface),
+					padding(TROUGH_PAD_H, TROUGH_PAD_V, TROUGH_PAD_H, TROUGH_PAD_V),
+				]}
+			>
+				<RNHostView modifiers={[fillMaxWidth(), fillMaxHeight()]}>
+					<CalcRuler
+						onChange={onChange}
+						palette={palette}
+						step={step}
+						value={value}
+					/>
+				</RNHostView>
+			</Box>
 		</Column>
+	);
+}
+
+/** Android's answer to the glass ½ button: the same tonal pill a key is. */
+function StepPill({
+	half,
+	onPress,
+	palette,
+}: {
+	half: boolean;
+	onPress: () => void;
+	palette: CalcPalette;
+}) {
+	return (
+		<Box
+			contentAlignment="center"
+			modifiers={[
+				size(s(30), s(22)),
+				clip(Shapes.RoundedCorner(s(11))),
+				background(half ? ACCENT : palette.hairline),
+				clickable(onPress),
+			]}
+		>
+			<Text
+				color={half ? ON_ACCENT : palette.primary}
+				style={rounded(14, "semibold")}
+			>
+				½
+			</Text>
+		</Box>
 	);
 }
 
@@ -599,7 +618,7 @@ export function DiscountSlider({
  * is decided here rather than negotiated across the bridge.
  */
 export function ComposeWheel({
-	height,
+	height = WHEEL_HEIGHT,
 	label,
 	labelColor,
 	onChange,
@@ -608,7 +627,8 @@ export function ComposeWheel({
 	selection,
 	width,
 }: {
-	height: number;
+	/** Shorter on the rough screen, which fits one more block than polish does. */
+	height?: number;
 	label: string | null;
 	labelColor: string;
 	onChange: (next: string) => void;

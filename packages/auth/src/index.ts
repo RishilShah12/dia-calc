@@ -15,12 +15,7 @@ export function createAuth() {
 				sameSite: "none",
 				secure: true,
 			},
-			// uncomment crossSubDomainCookies setting when ready to deploy and replace <your-workers-subdomain> with your actual workers subdomain
-			// https://developers.cloudflare.com/workers/wrangler/configuration/#workersdev
-			// crossSubDomainCookies: {
-			//   enabled: true,
-			//   domain: "<your-workers-subdomain>",
-			// },
+			// Enable crossSubDomainCookies only when web + server share a parent domain.
 		},
 		baseURL: env.BETTER_AUTH_URL,
 		database: drizzleAdapter(db, {
@@ -32,14 +27,13 @@ export function createAuth() {
 			enabled: true,
 		},
 		plugins: [expo()],
-		// uncomment cookieCache setting when ready to deploy to Cloudflare using *.workers.dev domains
-		// session: {
-		//   cookieCache: {
-		//     enabled: true,
-		//     maxAge: 60,
-		//   },
-		// },
 		secret: env.BETTER_AUTH_SECRET,
+		session: {
+			cookieCache: {
+				enabled: true,
+				maxAge: 60,
+			},
+		},
 		socialProviders: {
 			// Apple's `clientSecret` is a signed JWT that expires every six months,
 			// not a static string — regenerate it when you swap the placeholders out.

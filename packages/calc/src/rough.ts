@@ -11,6 +11,7 @@ import {
 import type { WheelOption } from "./polish";
 import {
 	EMPTY,
+	formatBack,
 	lookupPrice,
 	MAX_BACK,
 	MIN_BACK,
@@ -20,7 +21,7 @@ import {
 	summarizeRough,
 	usd,
 } from "./rap-calc";
-import { findShape, SHAPES } from "./shapes";
+import { CLARITIES, COLORS, findShape, SHAPES } from "./shapes";
 
 /**
  * The rough calculator's state machine, with no view in it.
@@ -50,8 +51,8 @@ export interface Part {
 export const blankPart = (): Part => ({
 	backText: "-25",
 	caratText: "",
-	clarity: "vs1",
-	color: "g",
+	clarity: "if",
+	color: "d",
 	lastEdited: "back",
 	netText: "",
 	shapeName: "Round",
@@ -121,7 +122,7 @@ function clampPart(part: Part, grids: PriceGrid[] | undefined): Part {
 export const money = (value: number, priced: boolean) =>
 	priced ? usd(value) : EMPTY;
 export const pct = (value: number, priced: boolean) =>
-	priced ? `${value.toFixed(0)}%` : EMPTY;
+	priced ? formatBack(value) : EMPTY;
 
 const gradeOption = (grade: string): WheelOption => ({
 	title: grade.toUpperCase(),
@@ -225,7 +226,9 @@ export function useRoughCalc(grids: PriceGrid[] | undefined) {
 
 	const handleDiscount = useCallback(
 		(next: number) => {
-			updateActive({ backText: String(Math.round(next)), lastEdited: "back" });
+			// Already on a step: the ruler snaps before it emits, so rounding again
+			// here would throw away the half percents it exists to select.
+			updateActive({ backText: String(next), lastEdited: "back" });
 		},
 		[updateActive]
 	);
@@ -323,8 +326,10 @@ export function useRoughCalc(grids: PriceGrid[] | undefined) {
 		activePart,
 		activeQuote,
 		addPart,
-		clarityOptions: (grid?.clarities ?? []).map(gradeOption),
-		colorOptions: (grid?.colors ?? []).map(gradeOption),
+		// The trade's scales stand in until the list lands — see `polish`, which
+		// hands its wheels the same fallback for the same reason.
+		clarityOptions: (grid?.clarities ?? CLARITIES).map(gradeOption),
+		colorOptions: (grid?.colors ?? COLORS).map(gradeOption),
 		deletePart,
 		grid,
 		guides,

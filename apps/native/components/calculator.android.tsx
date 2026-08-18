@@ -50,7 +50,6 @@ export function Calculator() {
 
 	const { palette, readout, target } = calc;
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
-	const wheelHeight = s(110);
 	const wheelLabel = (text: string) => (calc.guides ? text : null);
 
 	return (
@@ -75,7 +74,11 @@ export function Calculator() {
 			>
 				<ProfileSheet />
 
+				{/* Hugs its content rather than filling: the readout is a fixed
+				    number of lines, and the slack it used to claim is worth more
+				    under the wheels and the discount tape. */}
 				<CalcCard
+					grow={false}
 					pad={CARD_PADDING}
 					palette={palette}
 					scheme={calc.scheme}
@@ -167,7 +170,6 @@ export function Calculator() {
 				>
 					<Row modifiers={[fillMaxWidth()]}>
 						<ComposeWheel
-							height={wheelHeight}
 							label={wheelLabel("SHAPE")}
 							labelColor={calc.captionColor}
 							onChange={calc.onShape}
@@ -177,7 +179,6 @@ export function Calculator() {
 							width={wheelWidth}
 						/>
 						<ComposeWheel
-							height={wheelHeight}
 							label={wheelLabel("COLOR")}
 							labelColor={calc.captionColor}
 							onChange={calc.onColor}
@@ -187,7 +188,6 @@ export function Calculator() {
 							width={wheelWidth}
 						/>
 						<ComposeWheel
-							height={wheelHeight}
 							label={wheelLabel("CLARITY")}
 							labelColor={calc.captionColor}
 							onChange={calc.onClarity}

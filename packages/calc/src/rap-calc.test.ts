@@ -4,12 +4,16 @@ import test from "node:test";
 import {
 	backFromNet,
 	compareQuotes,
+	formatBack,
 	lookupPrice,
+	MAX_BACK,
+	MIN_BACK,
 	netFromBack,
 	type PriceGrid,
 	perCaratFromTotal,
 	pricedBy,
 	quote,
+	snapBack,
 	summarizeRough,
 } from "./rap-calc.ts";
 
@@ -200,4 +204,29 @@ test("pricedBy routes each edit target into the same two-field solve", () => {
 	});
 	assert.equal(perCaratFromTotal(8100, 0), 0);
 	assert.equal(perCaratFromTotal(8100, 2), 4050);
+});
+
+test("the discount control emits backs that are in range and on a step", () => {
+	assert.equal(snapBack(-25.4, 1), -25);
+	assert.equal(snapBack(-25.4, 0.5), -25.5);
+	// Halves survive the round trip: a back stored as -25.500000000000004 would
+	// print as -25.5 and compare as neither.
+	assert.equal(snapBack(-25.5, 0.5), -25.5);
+	assert.equal(snapBack(-25.5, 1), -25);
+	// Both ends clamp, including the premium half of the range.
+	assert.equal(snapBack(-400, 1), MIN_BACK);
+	assert.equal(snapBack(400, 1), MAX_BACK);
+	assert.equal(snapBack(0, 0.5), 0);
+});
+
+test("a back reads to the half only when there is half a percent to say", () => {
+	assert.equal(formatBack(-25), "-25%");
+	assert.equal(formatBack(-25.5), "-25.5%");
+	assert.equal(formatBack(0), "0%");
+	assert.equal(formatBack(50), "+50%");
+	assert.equal(formatBack(12.5), "+12.5%");
+	// On half steps the decimal is always there, so the reading keeps its width
+	// instead of shoving the row around every second tick.
+	assert.equal(formatBack(-12, 0.5), "-12.0%");
+	assert.equal(formatBack(-12.5, 0.5), "-12.5%");
 });

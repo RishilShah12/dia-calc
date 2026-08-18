@@ -6,6 +6,7 @@
   "scripts": {
     "adb:reverse": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:3000 tcp:3000",
     "android": "pnpm run adb:reverse; expo run:android",
+    "build:apk": "bash ./scripts/build-apk.sh",
     "dev": "expo start --clear",
     "ios": "expo run:ios",
     "prebuild": "expo prebuild",

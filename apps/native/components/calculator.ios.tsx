@@ -86,11 +86,14 @@ export function Calculator() {
 			>
 				<ProfileSheet />
 
+				{/* Hugs its content rather than filling: the readout is a fixed
+				    number of lines, and the slack it used to claim is worth more
+				    under the wheels and the discount tape. */}
 				<VStack
 					alignment="leading"
 					modifiers={[
 						padding({ all: CARD_PADDING }),
-						frame({ maxHeight: FILL, maxWidth: FILL }),
+						frame({ maxWidth: FILL }),
 						GLASS_CARD,
 					]}
 					spacing={s(10)}
@@ -185,11 +188,17 @@ export function Calculator() {
 				</VStack>
 
 				{/* Grades and discount are one decision about one stone, so they
-				    are one card — a divider separates them, not a gap. */}
+				    are one card — a divider separates them, not a gap.
+
+				    Hugs its content too, so no child of the column is greedy: a
+				    card that fills would take the height the wheel just gave back
+				    and turn it into padding inside itself. With nothing to claim
+				    it, the slack goes to the column, which centres it — a little
+				    above the readout and a little under the keypad. */}
 				<VStack
 					modifiers={[
 						padding({ vertical: s(12) }),
-						frame({ maxHeight: FILL, maxWidth: FILL }),
+						frame({ maxWidth: FILL }),
 						GLASS_CARD,
 					]}
 					spacing={s(8)}

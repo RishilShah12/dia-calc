@@ -27,6 +27,9 @@
     "deploy": {
       "cache": false
     },
+    "deploy:prod": {
+      "cache": false
+    },
     "destroy": {
       "cache": false
     }

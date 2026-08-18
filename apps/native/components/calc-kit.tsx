@@ -3,7 +3,7 @@ import {
 	KEYPAD_TARGETS,
 	type KeypadTarget,
 } from "@dia-calc/calc/keypad";
-import { MAX_BACK, MIN_BACK } from "@dia-calc/calc/rap-calc";
+import { formatBack } from "@dia-calc/calc/rap-calc";
 import {
 	Button,
 	Capsule,
@@ -12,7 +12,7 @@ import {
 	HStack,
 	Image,
 	Picker,
-	Slider,
+	RNHostView,
 	Spacer,
 	Text,
 	VStack,
@@ -20,10 +20,12 @@ import {
 import {
 	Animation,
 	animation,
+	background,
 	buttonBorderShape,
 	buttonStyle,
 	clipped,
 	contentTransition,
+	controlSize,
 	font,
 	foregroundStyle,
 	frame,
@@ -34,6 +36,7 @@ import {
 	opacity,
 	padding,
 	pickerStyle,
+	shapes,
 	tag,
 	tint,
 } from "@expo/ui/swift-ui/modifiers";
@@ -55,6 +58,7 @@ import {
 	s,
 	WHEEL_HEIGHT,
 } from "@/components/calc-base";
+import { CalcRuler, RULER_STRIP_H, useBackStep } from "@/components/calc-ruler";
 import {
 	ACCENT,
 	type CalcPalette,
@@ -79,6 +83,15 @@ import {
 
 /** SwiftUI's `.infinity` has no JSON form; this is large enough to fill. */
 export const FILL = 10_000;
+
+/**
+ * The well the discount tape runs in: a recess at half the card's radius, so it
+ * reads as cut into the card rather than laid on top of it.
+ */
+export const TROUGH_RADIUS = CARD_RADIUS / 2;
+/** Wider than it is tall: the tape needs the height, the recess needs the width. */
+export const TROUGH_PAD_H = s(14);
+export const TROUGH_PAD_V = s(10);
 
 export const GLASS_CARD = glassEffect({
 	cornerRadius: CARD_RADIUS,
@@ -421,25 +434,6 @@ export function Keypad({
 }
 
 /**
- * The slider's own end labels. SwiftUI pins these to the ends of the track,
- * which a row of equal-width `Text`s underneath cannot do — those centre each
- * label in its own slot, leaving -100% floating a tenth of the way in.
- */
-function EndLabel({ children, color }: { children: string; color: string }) {
-	return (
-		<Text
-			modifiers={[
-				rounded(10, "medium"),
-				foregroundStyle(color),
-				monospacedDigit(),
-			]}
-		>
-			{children}
-		</Text>
-	);
-}
-
-/**
  * A glass button sizes itself to its label, so the glyph's frame is what
  * decides the shape: a square one plus a circular border reads as a round
  * button, where the tall frame this replaced read as an oval.
@@ -474,8 +468,15 @@ export function RoundGlassButton({
 }
 
 /**
- * Guides off strips the caption and the end labels, which leaves the live
- * reading nowhere to sit but beside the track.
+ * The discount tape, recessed into the card.
+ *
+ * SwiftUI's `Slider` is gone from here: a back runs -100 to +100 and the trade
+ * quotes it to the half, which is finer than any track this wide can resolve.
+ * `CalcRuler` is the whole control — React Native, because Compose has to draw
+ * the same one and the two calculators have to feel identical — and SwiftUI's
+ * job is the surface under it. Glass, in its own container so the recess reads
+ * against the card's glass rather than dissolving into it, and a plain tonal
+ * well on anything older than iOS 26, where asking for glass draws nothing.
  */
 export function DiscountSlider({
 	captionColor,
@@ -490,52 +491,79 @@ export function DiscountSlider({
 	palette: CalcPalette;
 	value: number;
 }) {
-	const reading = (
-		<Text
-			modifiers={[
-				rounded(17, "bold"),
-				foregroundStyle(ACCENT),
-				monospacedDigit(),
-				contentTransition("numericText"),
-				animation(Animation.default, value),
-			]}
-		>
-			{`${value.toFixed(0)}%`}
-		</Text>
-	);
-
-	// No `step`: a stepped SwiftUI slider draws a tick per step, and a hundred
-	// of them under the track is noise. `onChange` rounds instead.
-	if (!guides) {
-		return (
-			<HStack modifiers={[padding({ horizontal: 18 })]} spacing={10}>
-				<Slider
-					max={MAX_BACK}
-					min={MIN_BACK}
-					modifiers={[frame({ maxWidth: FILL })]}
-					onValueChange={onChange}
-					value={value}
-				/>
-				{reading}
-			</HStack>
-		);
-	}
+	const { half, step, toggleStep } = useBackStep(value, onChange);
+	const trough = supportsLiquidGlass
+		? glassEffect({
+				cornerRadius: TROUGH_RADIUS,
+				glass: { interactive: false, variant: "regular" },
+				shape: "roundedRectangle",
+			})
+		: background(
+				palette.surface,
+				shapes.roundedRectangle({ cornerRadius: TROUGH_RADIUS })
+			);
 
 	return (
-		<VStack modifiers={[padding({ horizontal: 18 })]} spacing={2}>
-			<HStack>
-				<Caption color={captionColor}>DISCOUNT OFF LIST</Caption>
+		<VStack modifiers={[padding({ horizontal: 18 })]} spacing={s(4)}>
+			<HStack spacing={s(8)}>
+				{guides ? (
+					<Caption color={captionColor}>DISCOUNT OFF LIST</Caption>
+				) : null}
 				<Spacer />
-				{reading}
+				{/* Real glass, not a drawn pill: it sits on a glass card beside glass
+				    keys, and the one control here that was painted in React Native
+				    read as a sticker on top of the instrument. */}
+				<Button
+					modifiers={[
+						half ? primaryKeyStyle : keyStyle,
+						buttonBorderShape("capsule"),
+						tint(half ? ACCENT : KEY_TINT),
+						// Or the button's own padding makes this row taller than the
+						// caption it sits in, and the card grows to carry a toggle.
+						controlSize("small"),
+					]}
+					onPress={toggleStep}
+				>
+					<Text
+						modifiers={[
+							rounded(14, "semibold"),
+							foregroundStyle(half ? ON_ACCENT : palette.keyLabel),
+							frame({ width: s(18) }),
+						]}
+					>
+						½
+					</Text>
+				</Button>
+				<Text
+					modifiers={[
+						rounded(17, "bold"),
+						foregroundStyle(ACCENT),
+						monospacedDigit(),
+						contentTransition("numericText"),
+						animation(Animation.default, value),
+					]}
+				>
+					{formatBack(value, step)}
+				</Text>
 			</HStack>
-			<Slider
-				max={MAX_BACK}
-				maximumValueLabel={<EndLabel color={palette.subtle}>0%</EndLabel>}
-				min={MIN_BACK}
-				minimumValueLabel={<EndLabel color={palette.subtle}>-100%</EndLabel>}
-				onValueChange={onChange}
-				value={value}
-			/>
+			<GlassEffectContainer>
+				<VStack
+					modifiers={[
+						frame({ height: RULER_STRIP_H, maxWidth: FILL }),
+						padding({ horizontal: TROUGH_PAD_H, vertical: TROUGH_PAD_V }),
+						trough,
+					]}
+				>
+					<RNHostView>
+						<CalcRuler
+							onChange={onChange}
+							palette={palette}
+							step={step}
+							value={value}
+						/>
+					</RNHostView>
+				</VStack>
+			</GlassEffectContainer>
 		</VStack>
 	);
 }
