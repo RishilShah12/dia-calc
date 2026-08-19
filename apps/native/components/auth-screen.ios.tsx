@@ -33,7 +33,7 @@ import {
 	signInAsync,
 } from "expo-apple-authentication";
 import { useCallback, useRef } from "react";
-import { useColorScheme, useWindowDimensions } from "react-native";
+import { useWindowDimensions } from "react-native";
 
 import {
 	ACCENT,
@@ -41,6 +41,7 @@ import {
 	ON_ACCENT,
 	paletteFor,
 	supportsLiquidGlass,
+	useScheme,
 } from "@/components/calc-theme";
 import { type AuthMode, firstIssue, useAuthForm } from "@/hooks/use-auth-form";
 import { authClient } from "@/lib/auth-client";
@@ -143,7 +144,7 @@ function SocialButton({
 }
 
 export function AuthScreen({ mode }: { mode: AuthMode }) {
-	const scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 	const { height, width } = useWindowDimensions();
 	const contentWidth = width - H_PADDING * 2;

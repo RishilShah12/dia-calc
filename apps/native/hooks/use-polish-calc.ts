@@ -1,8 +1,7 @@
 import { usePolishCalc as usePolishState } from "@dia-calc/calc/polish";
 import { useQuery } from "@tanstack/react-query";
-import { useColorScheme } from "react-native";
 
-import { ACCENT, paletteFor, type Scheme } from "@/components/calc-theme";
+import { ACCENT, paletteFor, useScheme } from "@/components/calc-theme";
 import { orpc } from "@/utils/orpc";
 
 /**
@@ -15,7 +14,7 @@ import { orpc } from "@/utils/orpc";
 const HOUR = 60 * 60 * 1000;
 
 export function usePolishCalc() {
-	const scheme: Scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 
 	const priceList = useQuery(

@@ -8,6 +8,7 @@ import {
 	keypadDot,
 	maxDecimalsFor,
 } from "./keypad";
+import { showKeypad } from "./keypad-visible";
 import {
 	backFromNet,
 	compareQuotes,
@@ -22,6 +23,7 @@ import {
 	quote,
 	usd,
 } from "./rap-calc";
+import { totalDeltaFor, totalWasFor } from "./recut";
 import { CLARITIES, COLORS, findShape, SHAPES } from "./shapes";
 
 /**
@@ -36,34 +38,6 @@ import { CLARITIES, COLORS, findShape, SHAPES } from "./shapes";
  * The price grids are a parameter rather than a query, which is what keeps this
  * package free of react-query and of any one app's RPC client.
  */
-
-const signed = (value: number, format: (n: number) => string) =>
-	`${value >= 0 ? "+" : "−"}${format(Math.abs(value))}`;
-
-/**
- * The line under the recut total. Recut deliberately starts with an empty
- * weight, so "no price" would be wrong the moment the mode is switched on —
- * there is simply nothing to compare yet. The empty string still holds its
- * height, so the card does not resize once a weight arrives.
- *
- * It leads with the total the stone was worth before, not with the difference:
- * the difference is already the number in orange changing under the dealer's
- * thumb, and every other line on this card reads "was …" too.
- */
-function totalWasFor(
-	priced: boolean,
-	afterCarat: number,
-	baseTotal: string,
-	deltaPct: number
-): string {
-	if (afterCarat <= 0) {
-		return "";
-	}
-	if (!priced) {
-		return "no price for that grade";
-	}
-	return `was ${baseTotal} · ${signed(deltaPct, (n) => `${n.toFixed(1)}%`)}`;
-}
 
 /** Everything the summary card shows, already formatted for display. */
 export interface Readout {
@@ -83,6 +57,8 @@ export interface Readout {
 	netText: string;
 	netWas: string;
 	total: number;
+	/** The recut's swing as a percentage — the line under `totalWas`. */
+	totalDelta: string;
 	/** Plain digits, as `netRaw` is for the per-carat price. */
 	totalRaw: string;
 	totalText: string;
@@ -242,6 +218,11 @@ export function usePolishCalc(grids: PriceGrid[] | undefined) {
 	 */
 	const selectTarget = useCallback(
 		(next: KeypadTarget) => {
+			// Also asks for the keypad back: the tap that aims it is the only way
+			// back once it has been dismissed, and aiming at a field the user cannot
+			// type into would be a dead end. Here rather than in the screens because
+			// every selector on both platforms routes through this.
+			showKeypad();
 			if (next === "net") {
 				setLastEdited("net");
 				setNetText(readout.netPerCarat.toFixed(0));
@@ -381,6 +362,7 @@ function buildReadout(input: {
 			netText: money(base.netPerCarat, baseFound.perCarat !== null),
 			netWas: "",
 			total: base.total,
+			totalDelta: "",
 			totalRaw,
 			totalText: money(base.total, baseFound.perCarat !== null),
 			totalWas: "",
@@ -394,7 +376,7 @@ function buildReadout(input: {
 	const afterList = afterFound.perCarat ?? 0;
 	const afterBack = Number.parseFloat(input.recutBackText) || 0;
 	const after = quote(afterList, afterCarat, { backPct: afterBack });
-	const { deltaPct } = compareQuotes(base, after, baseCarat, afterCarat);
+	const { delta, deltaPct } = compareQuotes(base, after, baseCarat, afterCarat);
 	const priced = afterFound.perCarat !== null;
 
 	return {
@@ -411,6 +393,7 @@ function buildReadout(input: {
 		netText: money(after.netPerCarat, priced),
 		netWas: `was ${money(base.netPerCarat, baseFound.perCarat !== null)}`,
 		total: after.total,
+		totalDelta: totalDeltaFor(priced, afterCarat, deltaPct),
 		totalRaw: (after.total || 0).toFixed(0),
 		totalText: money(after.total, priced),
 		// Recut opens with no weight, by design — until one is typed there is
@@ -419,7 +402,8 @@ function buildReadout(input: {
 			priced,
 			afterCarat,
 			money(base.total, baseFound.perCarat !== null),
-			deltaPct
+			delta,
+			usd
 		),
 	};
 }

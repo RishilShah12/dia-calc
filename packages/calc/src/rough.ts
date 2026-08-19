@@ -8,6 +8,7 @@ import {
 	keypadDot,
 	maxDecimalsFor,
 } from "./keypad";
+import { showKeypad } from "./keypad-visible";
 import type { WheelOption } from "./polish";
 import {
 	EMPTY,
@@ -240,6 +241,7 @@ export function useRoughCalc(grids: PriceGrid[] | undefined) {
 	 */
 	const selectTarget = useCallback(
 		(next: KeypadTarget) => {
+			showKeypad();
 			if (next === "net") {
 				updateActive({
 					lastEdited: "net",
@@ -256,7 +258,12 @@ export function useRoughCalc(grids: PriceGrid[] | undefined) {
 		},
 		[activeQuote.netPerCarat, activeQuote.total, updateActive]
 	);
-	const selectRough = useCallback(() => setTarget("rough"), []);
+	// Not through `selectTarget` — the rough weight has no buffer to freeze — but
+	// it asks for the keypad back for the same reason.
+	const selectRough = useCallback(() => {
+		showKeypad();
+		setTarget("rough");
+	}, []);
 	const selectCarat = useCallback(() => selectTarget("carat"), [selectTarget]);
 	const selectNet = useCallback(() => selectTarget("net"), [selectTarget]);
 	const selectTotal = useCallback(() => selectTarget("total"), [selectTarget]);

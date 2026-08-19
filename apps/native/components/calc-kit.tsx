@@ -1,9 +1,5 @@
-import {
-	DIGIT_ROWS,
-	KEYPAD_TARGETS,
-	type KeypadTarget,
-} from "@dia-calc/calc/keypad";
-import { formatBack } from "@dia-calc/calc/rap-calc";
+import { DIGIT_ROWS } from "@dia-calc/calc/keypad";
+import { hideKeypad } from "@dia-calc/calc/keypad-visible";
 import {
 	Button,
 	Capsule,
@@ -16,6 +12,7 @@ import {
 	Spacer,
 	Text,
 	VStack,
+	ZStack,
 } from "@expo/ui/swift-ui";
 import {
 	Animation,
@@ -48,7 +45,9 @@ import {
 	CARET_DESCENDER,
 	CARET_HEIGHT,
 	CARET_WIDTH,
+	DELTA_H,
 	HEADER_GLYPH,
+	HIDE_GLYPH,
 	KEY_GAP,
 	KEY_MIN_HEIGHT,
 	KEY_TINT,
@@ -58,7 +57,12 @@ import {
 	s,
 	WHEEL_HEIGHT,
 } from "@/components/calc-base";
-import { CalcRuler, RULER_STRIP_H, useBackStep } from "@/components/calc-ruler";
+import {
+	CalcRuler,
+	RULER_STRIP_H,
+	RULER_TROUGH_H,
+	useBackStep,
+} from "@/components/calc-ruler";
 import {
 	ACCENT,
 	type CalcPalette,
@@ -89,9 +93,6 @@ export const FILL = 10_000;
  * reads as cut into the card rather than laid on top of it.
  */
 export const TROUGH_RADIUS = CARD_RADIUS / 2;
-/** Wider than it is tall: the tape needs the height, the recess needs the width. */
-export const TROUGH_PAD_H = s(14);
-export const TROUGH_PAD_V = s(10);
 
 export const GLASS_CARD = glassEffect({
 	cornerRadius: CARD_RADIUS,
@@ -140,6 +141,31 @@ export function Subtext({
 				foregroundStyle(color),
 				monospacedDigit(),
 				frame({ height: SUBTEXT_H }),
+			]}
+		>
+			{children}
+		</Text>
+	);
+}
+
+/**
+ * The percentage under a recut sum. Quieter than `Subtext` by a couple of
+ * points, because it is that line's footnote and not a second one of it.
+ */
+export function Delta({
+	children,
+	color,
+}: {
+	children: string;
+	color: string;
+}) {
+	return (
+		<Text
+			modifiers={[
+				rounded(12, "semibold"),
+				foregroundStyle(color),
+				monospacedDigit(),
+				frame({ height: DELTA_H }),
 			]}
 		>
 			{children}
@@ -301,12 +327,15 @@ export function Key({
 	onPress,
 	palette,
 	active = false,
+	wide = false,
 }: {
 	active?: boolean;
 	label: string;
 	/** Receives the label, so digit keys can share one stable handler. */
 	onPress: (label: string) => void;
 	palette: CalcPalette;
+	/** Spans both cells the target picker used to hold. */
+	wide?: boolean;
 }) {
 	const handlePress = useCallback(() => onPress(label), [label, onPress]);
 	// A word key is sized by its label: RECUT has to fit the same column a
@@ -318,6 +347,7 @@ export function Key({
 				active ? primaryKeyStyle : keyStyle,
 				tint(active ? ACCENT : KEY_TINT),
 				frame({ maxHeight: FILL, maxWidth: FILL, minHeight: KEY_MIN_HEIGHT }),
+				...(wide ? [gridCellColumns(2)] : []),
 			]}
 			onPress={handlePress}
 		>
@@ -335,13 +365,17 @@ export function Key({
 }
 
 /**
- * The three fields the digits can land in — carat, price per carat and total —
- * are a segmented picker rather than three keys, because they are a choice of
- * one, not three actions. That frees the fourth column's third slot for
- * `actionKey`, which is the one thing the two calculators disagree about:
- * polish puts RECUT there, rough puts ROUGH.
+ * The bottom row used to end in a segmented CT / $/CT / TOTAL picker saying where
+ * the digits would land. It has gone: every one of those three fields is a tap
+ * target on the card above and tapping one already aims the keypad, so the picker
+ * was a second way to say the same thing taking half a row to say it.
  *
- * The discount is not among the targets; it belongs to the slider.
+ * Those two cells hold the way out instead. The keypad is the largest block on
+ * either screen and only wanted while a number is being typed; `hideKeypad` is a
+ * module store, so nothing between here and the screen has to carry it.
+ *
+ * The fourth column's third slot is still `actionKey`, the one thing the two
+ * calculators disagree about: polish puts RECUT there, rough puts ROUGH.
  */
 export function Keypad({
 	actionKey,
@@ -349,9 +383,7 @@ export function Keypad({
 	onClear,
 	onDigit,
 	onDot,
-	onSelectTarget,
 	palette,
-	target,
 }: {
 	/** Row three, column four. See above. */
 	actionKey: React.ReactNode;
@@ -359,9 +391,7 @@ export function Keypad({
 	onClear: () => void;
 	onDigit: (digit: string) => void;
 	onDot: () => void;
-	onSelectTarget: (next: KeypadTarget) => void;
 	palette: CalcPalette;
-	target: KeypadTarget;
 }) {
 	const [top, middle, bottom] = DIGIT_ROWS;
 	return (
@@ -409,24 +439,7 @@ export function Keypad({
 				<Grid.Row>
 					<Key label="." onPress={onDot} palette={palette} />
 					<Key label="0" onPress={onDigit} palette={palette} />
-					<Picker
-						modifiers={[
-							pickerStyle("segmented"),
-							gridCellColumns(2),
-							frame({ maxHeight: FILL, maxWidth: FILL }),
-						]}
-						onSelectionChange={onSelectTarget}
-						selection={target}
-					>
-						{KEYPAD_TARGETS.map((option) => (
-							<Text
-								key={option.value}
-								modifiers={[tag(option.value), rounded(13, "semibold")]}
-							>
-								{option.title}
-							</Text>
-						))}
-					</Picker>
+					<Key label={HIDE_GLYPH} onPress={hideKeypad} palette={palette} wide />
 				</Grid.Row>
 			</Grid>
 		</GlassEffectContainer>
@@ -477,6 +490,9 @@ export function RoundGlassButton({
  * job is the surface under it. Glass, in its own container so the recess reads
  * against the card's glass rather than dissolving into it, and a plain tonal
  * well on anything older than iOS 26, where asking for glass draws nothing.
+ *
+ * No reading in the caption row: the tape's lens carries it now, at the point
+ * the thumb is actually working.
  */
 export function DiscountSlider({
 	captionColor,
@@ -534,26 +550,21 @@ export function DiscountSlider({
 						½
 					</Text>
 				</Button>
-				<Text
-					modifiers={[
-						rounded(17, "bold"),
-						foregroundStyle(ACCENT),
-						monospacedDigit(),
-						contentTransition("numericText"),
-						animation(Animation.default, value),
-					]}
-				>
-					{formatBack(value, step)}
-				</Text>
 			</HStack>
 			<GlassEffectContainer>
-				<VStack
-					modifiers={[
-						frame({ height: RULER_STRIP_H, maxWidth: FILL }),
-						padding({ horizontal: TROUGH_PAD_H, vertical: TROUGH_PAD_V }),
-						trough,
-					]}
-				>
+				{/* The recess is a layer behind the tape, not the box around it: the
+				    lens spans the full block and has to stand over both edges of the
+				    recess, which it cannot do from inside one. The tape holds its own
+				    margins — there is no padded box left to give it any. */}
+				<ZStack modifiers={[frame({ height: RULER_STRIP_H, maxWidth: FILL })]}>
+					<VStack
+						modifiers={[
+							frame({ height: RULER_TROUGH_H, maxWidth: FILL }),
+							trough,
+						]}
+					>
+						<Spacer />
+					</VStack>
 					<RNHostView>
 						<CalcRuler
 							onChange={onChange}
@@ -562,7 +573,7 @@ export function DiscountSlider({
 							value={value}
 						/>
 					</RNHostView>
-				</VStack>
+				</ZStack>
 			</GlassEffectContainer>
 		</VStack>
 	);

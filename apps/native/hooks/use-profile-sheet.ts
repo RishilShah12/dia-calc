@@ -1,8 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { useColorScheme } from "react-native";
 
-import { paletteFor, type Scheme } from "@/components/calc-theme";
+import { paletteFor, useScheme } from "@/components/calc-theme";
 import { authClient } from "@/lib/auth-client";
 import { setProfileOpen, useProfileOpen } from "@/lib/profile-sheet";
 import { orpc, queryClient } from "@/utils/orpc";
@@ -18,7 +17,7 @@ import { orpc, queryClient } from "@/utils/orpc";
 const HOUR = 60 * 60 * 1000;
 
 export function useProfileSheet() {
-	const scheme: Scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 	const isPresented = useProfileOpen();
 	const { data: session } = authClient.useSession();

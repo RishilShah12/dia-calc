@@ -15,10 +15,15 @@ import {
 	padding,
 } from "@expo/ui/jetpack-compose/modifiers";
 import { useCallback, useRef } from "react";
-import { useColorScheme } from "react-native";
+
 import { DESTRUCTIVE, s } from "@/components/calc-base";
 import { MaterialIcon, rounded } from "@/components/calc-kit-compose";
-import { ACCENT, ON_ACCENT, paletteFor } from "@/components/calc-theme";
+import {
+	ACCENT,
+	ON_ACCENT,
+	paletteFor,
+	useScheme,
+} from "@/components/calc-theme";
 import { type AuthMode, useAuthForm } from "@/hooks/use-auth-form";
 
 /**
@@ -39,7 +44,7 @@ const FIELD_H = 56;
 const H_PADDING = 20;
 
 export function AuthScreen({ mode }: { mode: AuthMode }) {
-	const scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 	const form = useAuthForm(mode);
 	const { submit } = form;

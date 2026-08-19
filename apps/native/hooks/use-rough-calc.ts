@@ -1,8 +1,7 @@
 import { useRoughCalc as useRoughState } from "@dia-calc/calc/rough";
 import { useQuery } from "@tanstack/react-query";
-import { useColorScheme } from "react-native";
 
-import { paletteFor, type Scheme } from "@/components/calc-theme";
+import { paletteFor, useScheme } from "@/components/calc-theme";
 import { orpc } from "@/utils/orpc";
 
 /**
@@ -16,7 +15,7 @@ import { orpc } from "@/utils/orpc";
 const HOUR = 60 * 60 * 1000;
 
 export function useRoughCalc() {
-	const scheme: Scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 
 	const priceList = useQuery(

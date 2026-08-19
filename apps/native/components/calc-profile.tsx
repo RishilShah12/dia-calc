@@ -27,11 +27,11 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { useColorScheme, useWindowDimensions } from "react-native";
+import { useWindowDimensions } from "react-native";
 
 import { SCREEN_PADDING } from "@/components/calc-base";
 import { FILL, RoundGlassButton, rounded } from "@/components/calc-kit";
-import { ACCENT, paletteFor } from "@/components/calc-theme";
+import { ACCENT, paletteFor, useScheme } from "@/components/calc-theme";
 import { authClient } from "@/lib/auth-client";
 import { setProfileOpen, useProfileOpen } from "@/lib/profile-sheet";
 import { orpc, queryClient } from "@/utils/orpc";
@@ -96,7 +96,7 @@ function SheetRow({
  * the presentation context, and are silently ignored.
  */
 export function ProfileSheet() {
-	const scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 	const { width } = useWindowDimensions();
 	const isPresented = useProfileOpen();

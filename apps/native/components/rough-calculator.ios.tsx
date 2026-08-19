@@ -1,3 +1,4 @@
+import { useKeypadHidden } from "@dia-calc/calc/keypad-visible";
 import { type RoughSummary, usd } from "@dia-calc/calc/rap-calc";
 import {
 	money,
@@ -46,8 +47,7 @@ import {
 import { useCallback } from "react";
 import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { BLOCK_GAP, SCREEN_PADDING, s } from "@/components/calc-base";
+import { BLOCK_GAP, KEYPAD_H, SCREEN_PADDING, s } from "@/components/calc-base";
 import {
 	Caption,
 	Caret,
@@ -94,6 +94,15 @@ import { useRoughCalc } from "@/hooks/use-rough-calc";
  */
 const ROUGH_CARD_PADDING = s(10);
 const ROUGH_WHEEL_HEIGHT = s(96);
+/**
+ * With the keypad dismissed, the wheels take what is left of its height after
+ * the totals card that stands in its place — roughly 112pt of four summary lines
+ * and their padding. Polish has no such tenant, so its wheels take the lot.
+ *
+ * ponytail: the 112 is measured, not derived — the totals card hugs its own
+ * content. If the wheels crowd the tape, bring this down.
+ */
+const ROUGH_WHEEL_TALL = ROUGH_WHEEL_HEIGHT + KEYPAD_H - s(112);
 const ROUGH_VALUE = 30;
 const PART_CARAT = 32;
 const PART_TOTAL = 27;
@@ -373,7 +382,6 @@ export function RoughCalculator() {
 		selectPart,
 		selectPartFromSheet,
 		selectRough,
-		selectTarget,
 		selectTotal,
 		setPartsOpen,
 		sliderValue,
@@ -383,7 +391,9 @@ export function RoughCalculator() {
 	const insets = useSafeAreaInsets();
 	const { width } = useWindowDimensions();
 
+	const keypadHidden = useKeypadHidden();
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
+	const wheelHeight = keypadHidden ? ROUGH_WHEEL_TALL : ROUGH_WHEEL_HEIGHT;
 	const wheelLabel = (text: string) => (guides ? text : null);
 
 	return (
@@ -616,7 +626,7 @@ export function RoughCalculator() {
 				>
 					<HStack spacing={0}>
 						<Wheel
-							height={ROUGH_WHEEL_HEIGHT}
+							height={wheelHeight}
 							label={wheelLabel("SHAPE")}
 							labelColor={palette.label}
 							onChange={handleShape}
@@ -628,7 +638,7 @@ export function RoughCalculator() {
 							width={wheelWidth}
 						/>
 						<Wheel
-							height={ROUGH_WHEEL_HEIGHT}
+							height={wheelHeight}
 							label={wheelLabel("COLOR")}
 							labelColor={palette.label}
 							onChange={handleColor}
@@ -640,7 +650,7 @@ export function RoughCalculator() {
 							width={wheelWidth}
 						/>
 						<Wheel
-							height={ROUGH_WHEEL_HEIGHT}
+							height={wheelHeight}
 							label={wheelLabel("CLARITY")}
 							labelColor={palette.label}
 							onChange={handleClarity}
@@ -664,23 +674,58 @@ export function RoughCalculator() {
 					/>
 				</VStack>
 
-				<Keypad
-					actionKey={
-						<Key
-							active={target === "rough"}
+				{keypadHidden ? (
+					/* The rough's totals, in the slot the keys were in — the four
+					   numbers the parts sheet ends with, which is what the screen is
+					   for once nobody is typing. No per-part rows: the card above
+					   already shows the part being edited, and with one part they
+					   were the same line twice. */
+					<VStack
+						modifiers={[
+							padding({ all: ROUGH_CARD_PADDING }),
+							frame({ maxWidth: FILL }),
+							GLASS_CARD,
+						]}
+						spacing={s(4)}
+					>
+						<SummaryLine
 							label="ROUGH"
-							onPress={selectRough}
 							palette={palette}
+							value={`${roughText || "0"} ct`}
 						/>
-					}
-					onBackspace={handleBackspace}
-					onClear={handleClear}
-					onDigit={handleDigit}
-					onDot={handleDot}
-					onSelectTarget={selectTarget}
-					palette={palette}
-					target={target}
-				/>
+						<SummaryLine
+							label="PARTS"
+							palette={palette}
+							value={`${summary.partsCarat.toFixed(2)} ct`}
+						/>
+						<SummaryLine
+							label="ALL PARTS"
+							palette={palette}
+							value={usd(summary.total)}
+						/>
+						<SummaryLine
+							label="VALUE / CT"
+							palette={palette}
+							value={usd(summary.perCarat, true)}
+						/>
+					</VStack>
+				) : (
+					<Keypad
+						actionKey={
+							<Key
+								active={target === "rough"}
+								label="ROUGH"
+								onPress={selectRough}
+								palette={palette}
+							/>
+						}
+						onBackspace={handleBackspace}
+						onClear={handleClear}
+						onDigit={handleDigit}
+						onDot={handleDot}
+						palette={palette}
+					/>
+				)}
 			</VStack>
 		</Host>
 	);

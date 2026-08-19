@@ -1,4 +1,5 @@
-import { Platform } from "react-native";
+import { useSyncExternalStore } from "react";
+import { Platform, useColorScheme } from "react-native";
 
 /**
  * Palette for the calculator and auth screens.
@@ -66,6 +67,56 @@ export type Scheme = "light" | "dark";
 
 export const paletteFor = (scheme: Scheme) =>
 	scheme === "dark" ? DARK : LIGHT;
+
+/**
+ * The appearance the app draws in — the phone's, until someone says otherwise.
+ *
+ * An override on top of the system setting rather than a replacement for it:
+ * `null` means "whatever the phone is set to", which is the only sensible way
+ * to open on a first launch. A module store rather than context for the same
+ * reason `useGuides` is one — the drawer content and the screens it themes are
+ * siblings under the navigator, so there is no shared parent to hang a provider
+ * on.
+ *
+ * ponytail: not persisted, so it resets with the app, exactly as Guides does in
+ * the row above it. `expo-secure-store`'s synchronous `getItem` is the upgrade
+ * if the choice should outlive a launch.
+ */
+let override: Scheme | null = null;
+const listeners = new Set<() => void>();
+
+/**
+ * Shaped for the switch that calls it — a plain module function like
+ * `toggleGuides`, so the drawer row can hand it over as a stable reference
+ * rather than rebuilding a closure on every render.
+ */
+export function setDark(on: boolean) {
+	override = on ? "dark" : "light";
+	for (const listener of listeners) {
+		listener();
+	}
+}
+
+const subscribe = (listener: () => void) => {
+	listeners.add(listener);
+	return () => {
+		listeners.delete(listener);
+	};
+};
+
+const getSnapshot = () => override;
+
+/**
+ * What every surface reads to decide its palette — including the SwiftUI and
+ * Compose trees, which take it as `colorScheme` and theme their own controls
+ * from it. One call replaces the `useColorScheme() === "dark" ? …` this used to
+ * be spelled as, in ten places.
+ */
+export function useScheme(): Scheme {
+	const chosen = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+	const system = useColorScheme();
+	return chosen ?? (system === "dark" ? "dark" : "light");
+}
 
 /**
  * Liquid Glass button styles (`glass`, `glassProminent`) only exist on iOS 26.

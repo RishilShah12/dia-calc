@@ -84,6 +84,25 @@ export const KEY_GAP = s(10);
  */
 export const KEYPAD_H = KEY_MIN_HEIGHT * 4 + KEY_GAP * 3;
 /**
+ * What the polish wheels grow to when the keypad is dismissed: exactly the block
+ * that left, gap included, so the card below picks up every point the keypad
+ * gave back and nothing else in the column moves.
+ *
+ * A second authored height rather than a flex, for the reason `WHEEL_HEIGHT`
+ * gives — the Compose-hosted rotor cannot measure itself — and the arithmetic is
+ * the same on both platforms.
+ */
+export const WHEEL_HEIGHT_TALL = WHEEL_HEIGHT + KEYPAD_H + BLOCK_GAP;
+
+/**
+ * The key that puts the keypad away. A text glyph rather than an icon, as the
+ * backspace key already is: SF Symbols and Material Symbols do not overlap, and
+ * Android has to rasterise a symbol font before Compose will draw it — async, so
+ * the first frame has nothing. A character both platforms already have costs
+ * none of that.
+ */
+export const HIDE_GLYPH = "▾";
+/**
  * Reserved whether or not a subtext is showing. Sized to be read rather than
  * merely noticed: in recut mode the "was …" lines are the whole point of the
  * comparison, and against numerals three times their size they lose.
@@ -92,6 +111,16 @@ export const KEYPAD_H = KEY_MIN_HEIGHT * 4 + KEY_GAP * 3;
  * fixed frame shorter than its content clips rather than grows.
  */
 export const SUBTEXT_H = s(20);
+/**
+ * The percentage line under the recut sum. Shorter than `SUBTEXT_H` and set in
+ * a smaller face: it is the third line of a three-line block, and given the
+ * same weight as the sum above it the pair reads as two headlines rather than
+ * a figure and its footnote.
+ *
+ * Reserved in both modes like `SUBTEXT_H`, so switching recut on does not
+ * resize the card — the height it costs comes out of the polish column's slack.
+ */
+export const DELTA_H = s(15);
 export const CARD_PADDING = s(18);
 /** Named because the caret beside it has to be cut to the same size. */
 export const METRIC_VALUE = 20;

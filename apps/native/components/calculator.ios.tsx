@@ -1,3 +1,4 @@
+import { useKeypadHidden } from "@dia-calc/calc/keypad-visible";
 import {
 	Divider,
 	// Not the universal `Host` from `@expo/ui`: same component on iOS, but its
@@ -25,10 +26,13 @@ import {
 	CARD_PADDING,
 	SCREEN_PADDING,
 	s,
+	WHEEL_HEIGHT,
+	WHEEL_HEIGHT_TALL,
 } from "@/components/calc-base";
 import {
 	Caption,
 	Caret,
+	Delta,
 	DiscountSlider,
 	FILL,
 	GLASS_CARD,
@@ -57,10 +61,14 @@ export function Calculator() {
 	const calc = usePolishCalc();
 	const insets = useSafeAreaInsets();
 	const { width } = useWindowDimensions();
+	const keypadHidden = useKeypadHidden();
 
 	const { palette, readout, target } = calc;
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
 	const wheelLabel = (text: string) => (calc.guides ? text : null);
+	// The wheels are what the dismissed keypad's height goes to: the card would
+	// otherwise grow into a box with a small rotor floating in it.
+	const wheelHeight = keypadHidden ? WHEEL_HEIGHT_TALL : WHEEL_HEIGHT;
 
 	return (
 		/* Only the bottom inset is ours: the navigator's header owns the top one,
@@ -150,6 +158,10 @@ export function Calculator() {
 								<Caret on={target === "total"} size={TOTAL_VALUE} />
 							</HStack>
 							<Subtext color={palette.subtext}>{readout.totalWas}</Subtext>
+							{/* Under the sum, not beside it: the columns are top-aligned,
+							    so the extra line hangs off the total without moving the
+							    carat block. */}
+							<Delta color={palette.subtext}>{readout.totalDelta}</Delta>
 						</VStack>
 					</HStack>
 
@@ -205,6 +217,7 @@ export function Calculator() {
 				>
 					<HStack spacing={0}>
 						<Wheel
+							height={wheelHeight}
 							label={wheelLabel("SHAPE")}
 							labelColor={calc.captionColor}
 							onChange={calc.onShape}
@@ -213,6 +226,7 @@ export function Calculator() {
 							width={wheelWidth}
 						/>
 						<Wheel
+							height={wheelHeight}
 							label={wheelLabel("COLOR")}
 							labelColor={calc.captionColor}
 							onChange={calc.onColor}
@@ -221,6 +235,7 @@ export function Calculator() {
 							width={wheelWidth}
 						/>
 						<Wheel
+							height={wheelHeight}
 							label={wheelLabel("CLARITY")}
 							labelColor={calc.captionColor}
 							onChange={calc.onClarity}
@@ -241,23 +256,23 @@ export function Calculator() {
 					/>
 				</VStack>
 
-				<Keypad
-					actionKey={
-						<Key
-							active={calc.recut}
-							label="RECUT"
-							onPress={calc.toggleRecut}
-							palette={palette}
-						/>
-					}
-					onBackspace={calc.handleBackspace}
-					onClear={calc.handleClear}
-					onDigit={calc.handleDigit}
-					onDot={calc.handleDot}
-					onSelectTarget={calc.selectTarget}
-					palette={palette}
-					target={target}
-				/>
+				{keypadHidden ? null : (
+					<Keypad
+						actionKey={
+							<Key
+								active={calc.recut}
+								label="RECUT"
+								onPress={calc.toggleRecut}
+								palette={palette}
+							/>
+						}
+						onBackspace={calc.handleBackspace}
+						onClear={calc.handleClear}
+						onDigit={calc.handleDigit}
+						onDot={calc.handleDot}
+						palette={palette}
+					/>
+				)}
 			</VStack>
 		</Host>
 	);

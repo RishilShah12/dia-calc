@@ -1,9 +1,5 @@
-import {
-	DIGIT_ROWS,
-	KEYPAD_TARGETS,
-	type KeypadTarget,
-} from "@dia-calc/calc/keypad";
-import { formatBack } from "@dia-calc/calc/rap-calc";
+import { DIGIT_ROWS } from "@dia-calc/calc/keypad";
+import { hideKeypad } from "@dia-calc/calc/keypad-visible";
 import {
 	Box,
 	Button,
@@ -41,6 +37,8 @@ import {
 	CARET_DESCENDER,
 	CARET_HEIGHT,
 	CARET_WIDTH,
+	DELTA_H,
+	HIDE_GLYPH,
 	KEY_GAP,
 	KEY_LABEL,
 	KEY_TINT,
@@ -52,7 +50,12 @@ import {
 	s,
 	WHEEL_HEIGHT,
 } from "@/components/calc-base";
-import { CalcRuler, RULER_STRIP_H, useBackStep } from "@/components/calc-ruler";
+import {
+	CalcRuler,
+	RULER_STRIP_H,
+	RULER_TROUGH_H,
+	useBackStep,
+} from "@/components/calc-ruler";
 import { ACCENT, type CalcPalette, ON_ACCENT } from "@/components/calc-theme";
 import { CalcWheel } from "@/components/calc-wheel";
 
@@ -93,9 +96,6 @@ const ICON_BUTTON = s(40);
  * strip is inset into the card rather than printed on it.
  */
 const TROUGH_RADIUS = CARD_RADIUS / 2;
-/** Wider than it is tall: the tape needs the height, the recess needs the width. */
-const TROUGH_PAD_H = s(14);
-const TROUGH_PAD_V = s(10);
 
 /**
  * The glass card's stand-in.
@@ -250,6 +250,26 @@ export function Subtext({
 	return (
 		<Box modifiers={[heightOf(SUBTEXT_H)]}>
 			<Text color={color} style={rounded(15, "semibold")}>
+				{children}
+			</Text>
+		</Box>
+	);
+}
+
+/**
+ * The percentage under a recut sum. Quieter than `Subtext` by a couple of
+ * points, because it is that line's footnote and not a second one of it.
+ */
+export function Delta({
+	children,
+	color,
+}: {
+	children: string;
+	color: string;
+}) {
+	return (
+		<Box modifiers={[heightOf(DELTA_H)]}>
+			<Text color={color} style={rounded(12, "semibold")}>
 				{children}
 			</Text>
 		</Box>
@@ -436,14 +456,12 @@ export function SegmentedRow<T extends string>({
 }
 
 /**
- * The three fields the digits can land in — carat, price per carat and total —
- * are a segmented control rather than three keys, because they are a choice of
- * one, not three actions. That frees the fourth column's third slot for
- * `actionKey`, which is the one thing the two calculators disagree about:
- * polish puts RECUT there, rough puts ROUGH.
+ * The Compose half of the keypad; the SwiftUI `Keypad` says why the segmented
+ * CT / $/CT / TOTAL picker that used to end this row is gone and what took its
+ * place — the two have to stay the same instrument.
  *
  * `Grid` has no Compose counterpart, so four weighted rows stand in for it and
- * `weight(2)` spans the two columns the target picker takes.
+ * `span={2}` covers the two columns the picker used to take.
  */
 export function Keypad({
 	actionKey,
@@ -451,18 +469,12 @@ export function Keypad({
 	onClear,
 	onDigit,
 	onDot,
-	onSelectTarget,
-	palette,
-	target,
 }: {
 	actionKey: ReactNode;
 	onBackspace: () => void;
 	onClear: () => void;
 	onDigit: (digit: string) => void;
 	onDot: () => void;
-	onSelectTarget: (next: KeypadTarget) => void;
-	palette: CalcPalette;
-	target: KeypadTarget;
 }) {
 	const [top, middle, bottom] = DIGIT_ROWS;
 	const rows = [
@@ -502,14 +514,7 @@ export function Keypad({
 			>
 				<Key label="." onPress={onDot} />
 				<Key label="0" onPress={onDigit} />
-				<Box modifiers={[weight(2), fillMaxHeight()]}>
-					<SegmentedRow
-						onChange={onSelectTarget}
-						options={KEYPAD_TARGETS}
-						palette={palette}
-						selection={target}
-					/>
-				</Box>
+				<Key label={HIDE_GLYPH} onPress={hideKeypad} span={2} />
 			</Row>
 		</Column>
 	);
@@ -522,6 +527,9 @@ export function Keypad({
  * the half, which is more precision than any track a phone can hold. `CalcRuler`
  * has the whole control; Compose supplies the surface it sits on and the box it
  * sits in, the same division of labour `ComposeWheel` runs on.
+ *
+ * No reading in the caption row: the tape's lens carries it now, at the point
+ * the thumb is actually working.
  */
 export function DiscountSlider({
 	captionColor,
@@ -553,19 +561,24 @@ export function DiscountSlider({
 				) : null}
 				<Spacer modifiers={[weight(1)]} />
 				<StepPill half={half} onPress={toggleStep} palette={palette} />
-				<Text color={ACCENT} style={rounded(17, "bold")}>
-					{formatBack(value, step)}
-				</Text>
 			</Row>
+			{/* The recess is a layer behind the tape, not the box around it. It has
+			    to be: a rounded trough in Compose means `clip`, `clip` cuts its
+			    children, and the lens stands taller than the recess by design. So the
+			    outer box only reserves the height, the recess paints inside it, and
+			    the tape — margins and all — fills the whole of it on top. */}
 			<Box
-				modifiers={[
-					fillMaxWidth(),
-					heightOf(RULER_STRIP_H + TROUGH_PAD_V * 2),
-					clip(Shapes.RoundedCorner(TROUGH_RADIUS)),
-					background(palette.surface),
-					padding(TROUGH_PAD_H, TROUGH_PAD_V, TROUGH_PAD_H, TROUGH_PAD_V),
-				]}
+				contentAlignment="center"
+				modifiers={[fillMaxWidth(), heightOf(RULER_STRIP_H)]}
 			>
+				<Box
+					modifiers={[
+						fillMaxWidth(),
+						heightOf(RULER_TROUGH_H),
+						clip(Shapes.RoundedCorner(TROUGH_RADIUS)),
+						background(palette.surface),
+					]}
+				/>
 				<RNHostView modifiers={[fillMaxWidth(), fillMaxHeight()]}>
 					<CalcRuler
 						onChange={onChange}

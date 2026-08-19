@@ -1,3 +1,4 @@
+import { useKeypadHidden } from "@dia-calc/calc/keypad-visible";
 import { type RoughSummary, usd } from "@dia-calc/calc/rap-calc";
 import {
 	money,
@@ -25,10 +26,10 @@ import {
 import { useCallback } from "react";
 import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import {
 	BLOCK_GAP,
 	DESTRUCTIVE,
+	KEYPAD_H,
 	SCREEN_PADDING,
 	s,
 } from "@/components/calc-base";
@@ -62,6 +63,8 @@ import { useRoughCalc } from "@/hooks/use-rough-calc";
 
 const ROUGH_CARD_PADDING = s(13);
 const ROUGH_WHEEL_HEIGHT = s(96);
+/** As on iOS: the keypad's height less the totals card that stands in its place. */
+const ROUGH_WHEEL_TALL = ROUGH_WHEEL_HEIGHT + KEYPAD_H - s(112);
 const ROUGH_VALUE = 30;
 const PART_CARAT = 32;
 const PART_TOTAL = 27;
@@ -247,7 +250,9 @@ export function RoughCalculator() {
 	const { width } = useWindowDimensions();
 
 	const { activePart, activeQuote, palette, summary, target } = calc;
+	const keypadHidden = useKeypadHidden();
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
+	const wheelHeight = keypadHidden ? ROUGH_WHEEL_TALL : ROUGH_WHEEL_HEIGHT;
 	const wheelLabel = (text: string) => (calc.guides ? text : null);
 	const closeParts = useCallback(
 		() => calc.setPartsOpen(false),
@@ -453,7 +458,7 @@ export function RoughCalculator() {
 				>
 					<Row modifiers={[fillMaxWidth()]}>
 						<ComposeWheel
-							height={ROUGH_WHEEL_HEIGHT}
+							height={wheelHeight}
 							label={wheelLabel("SHAPE")}
 							labelColor={palette.label}
 							onChange={calc.handleShape}
@@ -463,7 +468,7 @@ export function RoughCalculator() {
 							width={wheelWidth}
 						/>
 						<ComposeWheel
-							height={ROUGH_WHEEL_HEIGHT}
+							height={wheelHeight}
 							label={wheelLabel("COLOR")}
 							labelColor={palette.label}
 							onChange={calc.handleColor}
@@ -473,7 +478,7 @@ export function RoughCalculator() {
 							width={wheelWidth}
 						/>
 						<ComposeWheel
-							height={ROUGH_WHEEL_HEIGHT}
+							height={wheelHeight}
 							label={wheelLabel("CLARITY")}
 							labelColor={palette.label}
 							onChange={calc.handleClarity}
@@ -495,22 +500,52 @@ export function RoughCalculator() {
 					/>
 				</CalcCard>
 
-				<Keypad
-					actionKey={
-						<Key
-							active={target === "rough"}
+				{keypadHidden ? (
+					/* The rough's totals, in the slot the keys were in. No per-part
+					   rows — the card above already shows the part being edited. */
+					<CalcCard
+						grow={false}
+						pad={ROUGH_CARD_PADDING}
+						palette={palette}
+						scheme={calc.scheme}
+						spacing={s(4)}
+					>
+						<SummaryLine
 							label="ROUGH"
-							onPress={calc.selectRough}
+							palette={palette}
+							value={`${calc.roughText || "0"} ct`}
 						/>
-					}
-					onBackspace={calc.handleBackspace}
-					onClear={calc.handleClear}
-					onDigit={calc.handleDigit}
-					onDot={calc.handleDot}
-					onSelectTarget={calc.selectTarget}
-					palette={palette}
-					target={target}
-				/>
+						<SummaryLine
+							label="PARTS"
+							palette={palette}
+							value={`${summary.partsCarat.toFixed(2)} ct`}
+						/>
+						<SummaryLine
+							label="ALL PARTS"
+							palette={palette}
+							value={usd(summary.total)}
+						/>
+						<SummaryLine
+							label="VALUE / CT"
+							palette={palette}
+							value={usd(summary.perCarat, true)}
+						/>
+					</CalcCard>
+				) : (
+					<Keypad
+						actionKey={
+							<Key
+								active={target === "rough"}
+								label="ROUGH"
+								onPress={calc.selectRough}
+							/>
+						}
+						onBackspace={calc.handleBackspace}
+						onClear={calc.handleClear}
+						onDigit={calc.handleDigit}
+						onDot={calc.handleDot}
+					/>
+				)}
 			</Column>
 		</Host>
 	);

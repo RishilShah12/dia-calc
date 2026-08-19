@@ -63,6 +63,19 @@ export function Subtext({ children }: { children: string }) {
 	);
 }
 
+/**
+ * The percentage under a recut sum. Quieter than `Subtext`, because it is that
+ * line's footnote rather than a second one of it, and reserved for the same
+ * reason: switching recut on must not resize the card.
+ */
+export function Delta({ children }: { children: string }) {
+	return (
+		<span className="h-3.5 truncate text-[10px] text-calc-subtext leading-[0.875rem]">
+			{children}
+		</span>
+	);
+}
+
 /** One of the three small readouts under the rule: RAP LIST, PRICE / CT, DISCOUNT. */
 export function Metric({
 	active,
@@ -119,6 +132,7 @@ export function Metric({
 export function BigValue({
 	active,
 	align = "start",
+	delta,
 	label,
 	onSelect,
 	subtext,
@@ -127,6 +141,8 @@ export function BigValue({
 }: {
 	active?: boolean;
 	align?: "start" | "end";
+	/** The recut percentage, on its own line under the subtext. */
+	delta?: string;
 	label: string;
 	onSelect?: () => void;
 	subtext?: string;
@@ -148,6 +164,7 @@ export function BigValue({
 				{onSelect ? <Caret on={Boolean(active)} /> : null}
 			</span>
 			<Subtext>{subtext ?? ""}</Subtext>
+			{delta === undefined ? null : <Delta>{delta}</Delta>}
 		</>
 	);
 

@@ -1,3 +1,4 @@
+import { useKeypadHidden } from "@dia-calc/calc/keypad-visible";
 import { Column, Host, Row, Spacer, Text } from "@expo/ui/jetpack-compose";
 import {
 	clickable,
@@ -8,18 +9,20 @@ import {
 } from "@expo/ui/jetpack-compose/modifiers";
 import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import {
 	BLOCK_GAP,
 	CARD_PADDING,
 	SCREEN_PADDING,
 	s,
+	WHEEL_HEIGHT,
+	WHEEL_HEIGHT_TALL,
 } from "@/components/calc-base";
 import {
 	CalcCard,
 	Caption,
 	Caret,
 	ComposeWheel,
+	Delta,
 	DiscountSlider,
 	Key,
 	Keypad,
@@ -47,10 +50,12 @@ export function Calculator() {
 	const calc = usePolishCalc();
 	const insets = useSafeAreaInsets();
 	const { width } = useWindowDimensions();
+	const keypadHidden = useKeypadHidden();
 
 	const { palette, readout, target } = calc;
 	const wheelWidth = (width - SCREEN_PADDING * 2) / 3;
 	const wheelLabel = (text: string) => (calc.guides ? text : null);
+	const wheelHeight = keypadHidden ? WHEEL_HEIGHT_TALL : WHEEL_HEIGHT;
 
 	return (
 		<Host
@@ -125,6 +130,10 @@ export function Calculator() {
 								<Caret on={target === "total"} size={TOTAL_VALUE} />
 							</Row>
 							<Subtext color={palette.subtext}>{readout.totalWas}</Subtext>
+							{/* Under the sum, not beside it: the columns are top-aligned,
+							    so the extra line hangs off the total without moving the
+							    carat block. */}
+							<Delta color={palette.subtext}>{readout.totalDelta}</Delta>
 						</Column>
 					</Row>
 
@@ -170,6 +179,7 @@ export function Calculator() {
 				>
 					<Row modifiers={[fillMaxWidth()]}>
 						<ComposeWheel
+							height={wheelHeight}
 							label={wheelLabel("SHAPE")}
 							labelColor={calc.captionColor}
 							onChange={calc.onShape}
@@ -179,6 +189,7 @@ export function Calculator() {
 							width={wheelWidth}
 						/>
 						<ComposeWheel
+							height={wheelHeight}
 							label={wheelLabel("COLOR")}
 							labelColor={calc.captionColor}
 							onChange={calc.onColor}
@@ -188,6 +199,7 @@ export function Calculator() {
 							width={wheelWidth}
 						/>
 						<ComposeWheel
+							height={wheelHeight}
 							label={wheelLabel("CLARITY")}
 							labelColor={calc.captionColor}
 							onChange={calc.onClarity}
@@ -209,18 +221,21 @@ export function Calculator() {
 					/>
 				</CalcCard>
 
-				<Keypad
-					actionKey={
-						<Key active={calc.recut} label="RECUT" onPress={calc.toggleRecut} />
-					}
-					onBackspace={calc.handleBackspace}
-					onClear={calc.handleClear}
-					onDigit={calc.handleDigit}
-					onDot={calc.handleDot}
-					onSelectTarget={calc.selectTarget}
-					palette={palette}
-					target={target}
-				/>
+				{keypadHidden ? null : (
+					<Keypad
+						actionKey={
+							<Key
+								active={calc.recut}
+								label="RECUT"
+								onPress={calc.toggleRecut}
+							/>
+						}
+						onBackspace={calc.handleBackspace}
+						onClear={calc.handleClear}
+						onDigit={calc.handleDigit}
+						onDot={calc.handleDot}
+					/>
+				)}
 			</Column>
 		</Host>
 	);

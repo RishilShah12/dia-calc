@@ -2,14 +2,7 @@ import { type Picked, useRapList as useRapListState } from "@dia-calc/calc/rap";
 import { EMPTY, usd } from "@dia-calc/calc/rap-calc";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef } from "react";
-import {
-	Animated,
-	Pressable,
-	StyleSheet,
-	Text,
-	useColorScheme,
-	View,
-} from "react-native";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { CARD_RADIUS, roundedFamily, s } from "@/components/calc-base";
 import {
@@ -17,7 +10,7 @@ import {
 	type CalcPalette,
 	ON_ACCENT,
 	paletteFor,
-	type Scheme,
+	useScheme,
 } from "@/components/calc-theme";
 import { orpc } from "@/utils/orpc";
 
@@ -371,7 +364,7 @@ export function PriceTablePlaceholder({
  * calculator screens.
  */
 export function useRapList() {
-	const scheme: Scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 
 	const priceList = useQuery(

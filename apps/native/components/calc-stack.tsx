@@ -1,7 +1,6 @@
 import { Stack } from "expo-router";
-import { useColorScheme } from "react-native";
 
-import { ACCENT, paletteFor } from "@/components/calc-theme";
+import { ACCENT, paletteFor, useScheme } from "@/components/calc-theme";
 
 /**
  * The `Stack` all three calculator screens sit in.
@@ -20,7 +19,7 @@ import { ACCENT, paletteFor } from "@/components/calc-theme";
  * request, and a client-side check was never what enforced that.
  */
 export function CalcStack({ title }: { title: string }) {
-	const scheme = useColorScheme() === "dark" ? "dark" : "light";
+	const scheme = useScheme();
 	const palette = paletteFor(scheme);
 
 	return (
